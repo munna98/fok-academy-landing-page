@@ -72,7 +72,7 @@ menuBtn?.addEventListener('click', () => {
   const isVisible = navLinks.style.display === 'flex';
   navLinks.style.display = isVisible ? '' : 'flex';
   navLinks.style.position = 'absolute';
-  navLinks.style.top = '76px';
+  navLinks.style.top = '100%';
   navLinks.style.left = '0';
   navLinks.style.right = '0';
   navLinks.style.padding = '20px';
