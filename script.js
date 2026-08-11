@@ -1,10 +1,10 @@
 /*
-  FOK Academy 10-minute introductory offer.
-  IMPORTANT: This is a browser-session countdown. For a real campaign,
-  the deadline/price should also be enforced by the checkout/backend.
+  FOK Academy 10-minute introductory offer script.
+  Enforces session countdown timer and responsive sticky CTA interactions.
 */
 
-const OFFER_DURATION = 10 * 60 * 1000;
+// 10-Minute Timer Logic
+const OFFER_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const offerStartedAt = Date.now();
 const offerExpiresAt = offerStartedAt + OFFER_DURATION;
 
@@ -15,6 +15,7 @@ const priceEl = document.getElementById("coursePrice");
 const statusEl = document.getElementById("offerStatus");
 const enrollButton = document.getElementById("enrollButton");
 const priceCard = document.querySelector(".price-card");
+const mobileStickyCta = document.getElementById("mobileStickyCta");
 
 function updateCountdown() {
   const remaining = Math.max(0, offerExpiresAt - Date.now());
@@ -36,17 +37,22 @@ function updateCountdown() {
     if (minutesEl) minutesEl.textContent = "00";
     if (secondsEl) secondsEl.textContent = "00";
 
-    priceEl.innerHTML = '₹899 <small>one time</small>';
-    statusEl.textContent = "The ₹499 introductory offer has expired. Current price: ₹899.";
-    enrollButton.textContent = "Enroll for ₹899 →";
-    priceCard?.classList.add("expired");
+    if (priceEl) priceEl.innerHTML = '₹899 <small>one time</small>';
+    if (statusEl) statusEl.textContent = "The ₹499 introductory offer has expired. Current price: ₹899.";
+    if (enrollButton) enrollButton.textContent = "Enroll for ₹899 →";
+    if (priceCard) priceCard.classList.add("expired");
+
+    if (mobileStickyCta) {
+      const priceText = mobileStickyCta.querySelector(".mobile-cta-info span");
+      if (priceText) priceText.innerHTML = "₹899 <del>₹1299</del>";
+    }
   }
 }
 
 updateCountdown();
 const timer = setInterval(updateCountdown, 250);
 
-// FAQ accordion
+// Single Open FAQ Accordion
 document.querySelectorAll('.faq-list details').forEach((detail) => {
   detail.addEventListener('toggle', () => {
     if (detail.open) {
@@ -57,12 +63,14 @@ document.querySelectorAll('.faq-list details').forEach((detail) => {
   });
 });
 
-// Mobile navigation
+// Mobile Navigation Toggle
 const menuBtn = document.querySelector('.menu-btn');
 const navLinks = document.querySelector('.nav-links');
 
 menuBtn?.addEventListener('click', () => {
-  navLinks.style.display = navLinks.style.display === 'flex' ? '' : 'flex';
+  if (!navLinks) return;
+  const isVisible = navLinks.style.display === 'flex';
+  navLinks.style.display = isVisible ? '' : 'flex';
   navLinks.style.position = 'absolute';
   navLinks.style.top = '76px';
   navLinks.style.left = '0';
@@ -71,4 +79,44 @@ menuBtn?.addEventListener('click', () => {
   navLinks.style.background = '#fbfaf7';
   navLinks.style.flexDirection = 'column';
   navLinks.style.borderBottom = '1px solid #e5e7eb';
+  navLinks.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
 });
+
+// Smooth Scroll for Nav Links & CTAs
+document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+  anchor.addEventListener('click', function (e) {
+    const targetId = this.getAttribute('href');
+    if (targetId === '#') return;
+    const targetElement = document.querySelector(targetId);
+    if (targetElement) {
+      e.preventDefault();
+      // Close mobile menu if open
+      if (navLinks && window.innerWidth <= 768) {
+        navLinks.style.display = '';
+      }
+      targetElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  });
+});
+
+// Hide Mobile Sticky CTA when Offer Section is visible in viewport
+if (mobileStickyCta && priceCard) {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          mobileStickyCta.style.opacity = '0';
+          mobileStickyCta.style.pointerEvents = 'none';
+        } else {
+          mobileStickyCta.style.opacity = '1';
+          mobileStickyCta.style.pointerEvents = 'auto';
+        }
+      });
+    },
+    { threshold: 0.2 }
+  );
+  observer.observe(priceCard);
+}

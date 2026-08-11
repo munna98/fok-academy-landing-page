@@ -28,4 +28,3 @@ The updated template starts a 10-minute browser-session countdown:
 The visible price, CTA and countdown update automatically when the timer reaches zero.
 
 **Important for production:** the JavaScript timer is only a front-end experience. If the ₹499 price is a real offer, enforce the price/deadline in your payment/checkout system too. Otherwise a visitor could bypass the front-end timer or refresh/open another browser.
-"# fok-academy-landing-page" 
