@@ -20,6 +20,35 @@
   --shadow-hover: 0 30px 80px rgba(14, 33, 53, 0.18);
 }
 
+.text-gold {
+  color: var(--gold) !important;
+}
+
+.text-green {
+  color: var(--green) !important;
+}
+
+.text-red {
+  color: var(--red) !important;
+}
+
+.q-icon {
+  font-size: 24px;
+  color: var(--navy);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.product-icon i {
+  font-size: 32px;
+  color: var(--gold);
+}
+
+.inside-icon i {
+  font-size: 28px;
+  color: var(--gold-dark);
+}
+
 * {
   box-sizing: border-box;
 }
