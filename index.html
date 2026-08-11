@@ -17,7 +17,7 @@
     <div class="announcement-content">
       <span class="announcement-text"><i class="fa-solid fa-fire text-gold"></i> INTRODUCTORY OFFER ENDS IN</span>
       <strong id="topCountdown" class="announcement-timer">10:00</strong>
-      <a href="#offer" class="announcement-btn">Claim ₹499 Offer →</a>
+      <a href="checkout.html" class="announcement-btn">Claim ₹499 Offer →</a>
     </div>
   </div>
 
@@ -41,7 +41,7 @@
         <a href="#faq">FAQ</a>
       </div>
 
-      <a class="btn btn-small btn-gold" href="#offer">Join Workshop</a>
+      <a class="btn btn-small btn-gold" href="checkout.html">Join Workshop</a>
       <button class="menu-btn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
     </nav>
   </header>
@@ -59,7 +59,7 @@
           </p>
 
           <div class="hero-actions">
-            <a class="btn btn-gold btn-large" href="#offer">Join the Amazon Seller Workshop <span>→</span></a>
+            <a class="btn btn-gold btn-large" href="checkout.html">Join the Amazon Seller Workshop <span>→</span></a>
             <a class="text-link" href="#proof">See What You'll Learn ↓</a>
           </div>
 
@@ -78,7 +78,7 @@
 
         <div class="hero-visual">
           <div class="visual-card">
-            <div class="visual-badge">REAL AMAZON SELLER</div>
+            <div class="visual-badge">AMAZON SELLER (5+ YRS)</div>
             <div class="portrait-wrapper">
               <img src="assets/naseef-photo.jpg" alt="Naseef Neeruttichali - Founder of Flavors of Kerala & FOK Academy" class="hero-portrait" />
             </div>
@@ -510,7 +510,7 @@
             </div>
 
             <p id="offerStatus">Join before the timer expires to lock in the ₹499 introductory price.</p>
-            <a class="btn btn-gold full btn-large" id="enrollButton" href="#">Enroll for ₹499 →</a>
+            <a class="btn btn-gold full btn-large" id="enrollButton" href="checkout.html">Enroll for ₹499 →</a>
             <small class="secure"><i class="fa-solid fa-lock text-gold"></i> Secure payment • Instant access</small>
           </div>
         </div>
@@ -579,7 +579,7 @@
           <h2>Learn Amazon from someone who's already in the game.</h2>
           <p>Naseef built Flavors of Kerala by actually selling products on Amazon. Now you can learn the process behind that experience and start building your own understanding of the business.</p>
         </div>
-        <a class="btn btn-gold btn-large" href="#offer">Join the Amazon Seller Workshop — ₹499 →</a>
+        <a class="btn btn-gold btn-large" href="checkout.html">Join the Amazon Seller Workshop — ₹499 →</a>
       </div>
     </section>
   </main>
@@ -590,7 +590,7 @@
       <strong>Amazon Seller Workshop</strong>
       <span>₹499 <del>₹899</del></span>
     </div>
-    <a href="#offer" class="btn btn-gold btn-small">Join Now →</a>
+    <a href="checkout.html" class="btn btn-gold btn-small">Join Now →</a>
   </div>
 
   <footer>
@@ -612,6 +612,95 @@
       <span>© 2026 FOK Academy</span>
     </div>
   </footer>
+
+  <!-- Checkout Modal Overlay (HDFC SmartGateway Integration) -->
+  <div class="modal-overlay" id="checkoutModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalCloseBtn" aria-label="Close modal">&times;</button>
+      
+      <div class="modal-header">
+        <div class="modal-badge"><i class="fa-solid fa-bolt text-gold"></i> INSTANT ACCESS</div>
+        <h3 id="modalTitle">Complete Your Enrollment</h3>
+        <p class="modal-subtitle">Enter your details to proceed to HDFC SmartGateway secure checkout</p>
+      </div>
+
+      <div class="modal-summary">
+        <div class="summary-item">
+          <div class="summary-info">
+            <strong>Amazon Seller Masterclass</strong>
+            <small>By Naseef Neeruttichali (FOK Academy)</small>
+          </div>
+          <div class="summary-price" id="modalPriceTag">₹499</div>
+        </div>
+      </div>
+
+      <form id="checkoutForm" class="checkout-form">
+        <div class="form-group">
+          <label for="studentName"><i class="fa-solid fa-user"></i> Full Name</label>
+          <input type="text" id="studentName" placeholder="e.g. Aswin Krishna" required />
+          <span class="field-error" id="nameError"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="studentEmail"><i class="fa-solid fa-envelope"></i> Email Address</label>
+          <input type="email" id="studentEmail" placeholder="e.g. aswin@example.com" required />
+          <span class="field-error" id="emailError"></span>
+        </div>
+
+        <div class="phone-grid">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="countryCodeSelect"><i class="fa-solid fa-globe"></i> Country</label>
+            <div class="input-with-icon">
+              <select id="countryCodeSelect" class="form-select-input" aria-label="Select Country Code">
+                <option value="+91" selected>🇮🇳 +91 (IN)</option>
+                <option value="+971">🇦🇪 +971 (UAE)</option>
+                <option value="+966">🇸🇦 +966 (KSA)</option>
+                <option value="+974">🇶🇦 +974 (QAT)</option>
+                <option value="+968">🇴🇲 +968 (OMN)</option>
+                <option value="+965">🇰🇼 +965 (KWT)</option>
+                <option value="+973">🇧🇭 +973 (BAH)</option>
+                <option value="+1">🇺🇸 +1 (US)</option>
+                <option value="+44">🇬🇧 +44 (UK)</option>
+                <option value="+65">🇸🇬 +65 (SG)</option>
+                <option value="+60">🇲🇾 +60 (MY)</option>
+                <option value="+61">🇦🇺 +61 (AU)</option>
+              </select>
+              <i class="fa-solid fa-globe field-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="studentPhone"><i class="fa-solid fa-phone"></i> Mobile Number</label>
+            <div class="input-with-icon">
+              <input type="tel" id="studentPhone" placeholder="Mobile number" maxlength="15" required />
+              <i class="fa-solid fa-phone field-icon"></i>
+            </div>
+          </div>
+        </div>
+        <span class="field-error" id="phoneError"></span>
+
+        <div class="form-alert" id="formAlert" style="display: none;"></div>
+
+        <button type="submit" class="btn btn-gold full btn-large modal-submit-btn" id="paySubmitBtn">
+          <span class="btn-text">Proceed to HDFC SmartGateway →</span>
+          <span class="btn-spinner" style="display: none;"><i class="fa-solid fa-circle-notch fa-spin"></i> Securing session...</span>
+        </button>
+
+        <div class="payment-trust-footer">
+          <div class="hdfc-badge-wrap">
+            <img src="assets/fok-logo-mono.png" alt="" class="mini-hdfc-logo" style="height: 18px; filter: brightness(0) invert(1);" />
+            <span>POWERED BY <strong>HDFC BANK SMARTGATEWAY</strong></span>
+          </div>
+          <div class="trust-icons">
+            <span><i class="fa-solid fa-shield-halved text-gold"></i> 256-Bit SSL Encrypted</span>
+            <span><i class="fa-brands fa-google-pay"></i> UPI</span>
+            <span><i class="fa-solid fa-credit-card"></i> Cards</span>
+            <span><i class="fa-solid fa-building-columns"></i> Netbanking</span>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>

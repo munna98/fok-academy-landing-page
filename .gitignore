@@ -1,0 +1,22 @@
+# Environment variables & secrets (HDFC SmartGateway API Keys)
+.env
+.env.local
+.env.production
+.env.development
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

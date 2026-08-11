@@ -2166,3 +2166,340 @@ footer {
     font-size: 38px;
   }
 }
+
+/* ==========================================================================
+   CHECKOUT MODAL & HDFC SMARTGATEWAY STYLING
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(9, 26, 43, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay.active {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.modal-card {
+  background: var(--navy-2);
+  width: 100%;
+  max-width: 460px;
+  border-radius: 24px;
+  padding: 30px 28px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(231, 169, 21, 0.3);
+  color: white;
+  position: relative;
+  transform: scale(0.94) translateY(10px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-overlay.active .modal-card {
+  transform: scale(1) translateY(0);
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: white;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(231, 169, 21, 0.15);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-bottom: 8px;
+}
+
+.modal-header h3 {
+  font-family: "Manrope", sans-serif;
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: white;
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  color: #aebecf;
+  margin: 0;
+}
+
+.modal-summary {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-info strong {
+  display: block;
+  font-size: 14px;
+  color: white;
+}
+
+.summary-info small {
+  display: block;
+  font-size: 11px;
+  color: #aebecf;
+  margin-top: 2px;
+}
+
+.summary-price {
+  font-family: "Manrope", sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #d1deea;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-group label i {
+  color: var(--gold);
+}
+
+.form-group input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.form-group input::placeholder {
+  color: #64748b;
+}
+
+.form-group input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(231, 169, 21, 0.2);
+}
+
+.phone-grid {
+  display: grid;
+  grid-template-columns: 145px 1fr;
+  gap: 16px;
+}
+
+.form-select-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 14px 28px 14px 44px !important;
+  color: white;
+  font-size: 14.5px;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.25s ease;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23e7a915' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.form-select-input:focus {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(231, 169, 21, 0.2);
+}
+
+.form-select-input option {
+  background: #0e2135;
+  color: white;
+  font-weight: 600;
+  padding: 10px;
+}
+
+@media (max-width: 480px) {
+  .phone-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.phone-input-wrap {
+  display: flex;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  transition: border-color 0.2s;
+}
+
+.phone-input-wrap:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(231, 169, 21, 0.2);
+}
+
+.country-prefix,
+.country-select {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 28px 12px 14px;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e7a915' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: background-color 0.2s;
+}
+
+.country-select:focus {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.country-select option {
+  background: #0e2135;
+  color: white;
+  font-weight: 600;
+  padding: 8px;
+}
+
+.phone-input-wrap input {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.field-error {
+  color: #f87171;
+  font-size: 11px;
+  display: block;
+  margin-top: 2px;
+}
+
+.form-alert {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.modal-submit-btn {
+  margin-top: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-trust-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.hdfc-badge-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #aebecf;
+  margin-bottom: 8px;
+}
+
+.hdfc-badge-wrap strong {
+  color: white;
+}
+
+.trust-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+

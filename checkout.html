@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Complete your enrollment for the Amazon Seller Workshop by FOK Academy and Naseef Neeruttichali." />
+  <title>Checkout | Amazon Seller Workshop - FOK Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Off-White Theme (matching main landing page design) */
+    .checkout-page-wrap {
+      min-height: 100vh;
+      background: var(--cream);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .checkout-header-bar {
+      border-bottom: 1px solid var(--line);
+      padding: 16px 0;
+      background: white;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .checkout-header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .checkout-back-link {
+      color: var(--navy);
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 99px;
+      background: var(--gold-light);
+      border: 1px solid rgba(231, 169, 21, 0.3);
+      transition: all 0.25s ease;
+    }
+    
+    .checkout-back-link:hover {
+      color: var(--gold-dark);
+      background: #fef0c7;
+      transform: translateX(-3px);
+    }
+    
+    .checkout-main {
+      flex: 1;
+      padding: 40px 0 80px;
+    }
+    
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 36px;
+      align-items: start;
+    }
+    
+    .checkout-summary-card,
+    .checkout-form-card {
+      background: white;
+      border-radius: 24px;
+      padding: 38px 36px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      color: var(--navy);
+    }
+
+    .checkout-summary-card {
+      position: sticky;
+      top: 90px;
+    }
+
+    .checkout-form-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold) 0%, #f59e0b 50%, var(--gold) 100%);
+    }
+
+    .step-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--gold-light);
+      border: 1px solid rgba(231, 169, 21, 0.35);
+      color: var(--gold-dark);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      padding: 5px 14px;
+      border-radius: 99px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    
+    .step-indicator .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 8px #16a34a;
+    }
+    
+    .checkout-timer-banner {
+      background: var(--gold-light);
+      border: 1px solid rgba(231, 169, 21, 0.35);
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .checkout-timer-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--gold-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .checkout-timer-clock {
+      font-family: 'Manrope', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: 0.05em;
+      background: white;
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(231, 169, 21, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Form Fields Improvements */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group label i {
+      color: var(--gold-dark);
+      font-size: 14px;
+    }
+
+    .input-with-icon {
+      position: relative;
+    }
+
+    .input-with-icon i.field-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 15px;
+      transition: color 0.2s;
+    }
+
+    .input-with-icon input {
+      padding-left: 44px !important;
+    }
+
+    .input-with-icon input:focus + i.field-icon,
+    .input-with-icon:focus-within i.field-icon {
+      color: var(--gold-dark);
+    }
+
+    .form-group input {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 14px 16px;
+      color: var(--navy);
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.25s ease;
+      width: 100%;
+    }
+
+    .form-group input::placeholder {
+      color: #94a3b8;
+    }
+
+    .form-group input:focus {
+      background: white;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(231, 169, 21, 0.2);
+    }
+
+    .field-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Restored Unified Phone Input Bar Placement */
+    .phone-input-wrap {
+      display: flex;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #f8fafc;
+      transition: all 0.25s ease;
+    }
+
+    .phone-input-wrap:focus-within {
+      background: white;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(231, 169, 21, 0.2);
+    }
+
+    .country-select {
+      background: #f1f5f9;
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 14px;
+      padding: 14px 28px 14px 14px;
+      border: none;
+      border-right: 1.5px solid #cbd5e1;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2319324c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      transition: background-color 0.2s;
+    }
+
+    .country-select:focus {
+      background-color: #e2e8f0;
+    }
+
+    .country-select option {
+      background: white;
+      color: var(--navy);
+      font-weight: 600;
+      padding: 8px;
+    }
+
+    .phone-input-wrap input {
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      padding-left: 14px !important;
+      color: var(--navy) !important;
+    }
+
+    /* Submit Button & Micro Features */
+    .submit-cta-button {
+      background: linear-gradient(135deg, #f5b92e 0%, #d4950e 100%);
+      color: #091a2b;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 24px;
+      width: 100%;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(231, 169, 21, 0.35);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .submit-cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(231, 169, 21, 0.45);
+      filter: brightness(1.05);
+    }
+
+    .submit-cta-button:active {
+      transform: translateY(0);
+    }
+
+    .guarantee-pills {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 22px 0 18px;
+      padding-top: 18px;
+      border-top: 1px dashed #cbd5e1;
+    }
+
+    .guarantee-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--navy);
+      font-weight: 600;
+    }
+
+    .guarantee-pill i {
+      display: block;
+      font-size: 15px;
+      color: var(--gold-dark);
+      margin-bottom: 4px;
+    }
+
+    .hdfc-badge-wrap {
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 11px;
+      margin-bottom: 8px;
+    }
+    .hdfc-badge-wrap strong {
+      color: var(--navy);
+    }
+    .trust-icons {
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      font-size: 10px;
+    }
+
+    @media (max-width: 868px) {
+      .checkout-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+      .checkout-summary-card {
+        position: static;
+      }
+      .checkout-main {
+        padding: 24px 0 60px;
+      }
+      .checkout-summary-card, .checkout-form-card {
+        padding: 26px 20px;
+      }
+      .guarantee-pills {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .guarantee-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-align: left;
+        padding: 8px 12px;
+      }
+      .guarantee-pill i {
+        margin-bottom: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="checkout-page-wrap">
+    <!-- Top Announcement Bar -->
+    <div class="announcement">
+      <div class="announcement-content">
+        <span class="announcement-text"><i class="fa-solid fa-fire text-gold"></i> INTRODUCTORY OFFER ENDS IN</span>
+        <strong id="topCountdown" class="announcement-timer">10:00</strong>
+        <span class="announcement-text" style="color: var(--gold);"><i class="fa-solid fa-lock"></i> SSL Encrypted Checkout Page</span>
+      </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="checkout-header-bar">
+      <div class="container checkout-header-inner">
+        <a class="brand" href="index.html">
+          <img src="assets/fok-logo.png" alt="FOK Academy Logo" />
+          <div class="brand-text">
+            <strong>FOK</strong>
+            <span>ACADEMY</span>
+          </div>
+        </a>
+
+        <a href="index.html" class="checkout-back-link">
+          <i class="fa-solid fa-arrow-left"></i> Back to Workshop Info
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="checkout-main">
+      <div class="container">
+        <div class="checkout-grid">
+          
+          <!-- Left Side: Order Summary -->
+          <div class="checkout-summary-card">
+            <div class="checkout-timer-banner">
+              <div class="checkout-timer-title">
+                <i class="fa-solid fa-hourglass-half text-gold"></i>
+                <span id="timerBannerLabel">Introductory Offer Reserved</span>
+              </div>
+              <div class="checkout-timer-clock" id="checkoutClock">10:00</div>
+            </div>
+
+            <div class="modal-badge"><i class="fa-solid fa-bolt text-gold"></i> INSTANT ENROLLMENT</div>
+            <h2 style="font-family: 'Manrope', sans-serif; font-size: 26px; margin: 12px 0 6px; color: var(--navy);">Amazon Seller Workshop</h2>
+            <p style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">By Naseef Neeruttichali • Founder, Flavors of Kerala</p>
+
+            <div class="modal-summary" style="margin-bottom: 24px; background: #f8fafc; border: 1px solid var(--line); border-radius: 16px; padding: 16px 20px;">
+              <div class="summary-item">
+                <div class="summary-info">
+                  <strong style="font-size: 16px; color: var(--navy);">Workshop Fee</strong>
+                  <small id="pricingNote" style="color: var(--muted);">Introductory ₹499 Offer Applied</small>
+                </div>
+                <div class="summary-price" id="checkoutPriceTag" style="font-size: 34px; font-family: 'Manrope', sans-serif; color: var(--navy);">₹499</div>
+              </div>
+            </div>
+
+            <h4 style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold-dark); margin-bottom: 14px; font-weight: 800;">What's Included in Your Access:</h4>
+            <div class="bonus-list" style="grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; color: var(--ink);">
+              <div><i class="fa-solid fa-circle-check text-gold"></i> Practical Product Research Framework</div>
+              <div><i class="fa-solid fa-circle-check text-gold"></i> Sourcing & Landed Cost Calculators</div>
+              <div><i class="fa-solid fa-circle-check text-gold"></i> Listing Optimization & Conversion Playbook</div>
+              <div><i class="fa-solid fa-circle-check text-gold"></i> Launch Strategy & PPC Advertising Basics</div>
+              <div><i class="fa-solid fa-circle-check text-gold"></i> Downloadable Templates & Checklists</div>
+              <div><i class="fa-solid fa-circle-check text-gold"></i> Live Session & Recording Access</div>
+            </div>
+
+            <div class="storefront-badge-note" style="margin-top: 20px; background: var(--cream); border: 1px solid var(--line); color: var(--navy);">
+              <i class="fa-solid fa-shield-halved text-gold"></i> Real Amazon seller practical framework built from <strong>Flavors of Kerala</strong> brand experience.
+            </div>
+          </div>
+
+          <!-- Right Side: Student Registration & HDFC Form -->
+          <div class="checkout-form-card">
+            <div class="step-indicator">
+              <span class="pulse-dot"></span> STEP 1 OF 2 — STUDENT DETAILS
+            </div>
+
+            <div style="margin-bottom: 28px;">
+              <h3 style="font-family: 'Manrope', sans-serif; font-size: 26px; margin: 0 0 6px; color: var(--navy);">Student Registration</h3>
+              <p style="color: var(--muted); font-size: 14px; margin: 0; line-height: 1.5;">Enter your details below to register and proceed to secure HDFC SmartGateway checkout.</p>
+            </div>
+
+            <form id="checkoutForm" class="checkout-form">
+              <div class="form-group">
+                <label for="studentName"><i class="fa-solid fa-user"></i> Full Name</label>
+                <div class="input-with-icon">
+                  <input type="text" id="studentName" placeholder="e.g. Aswin Krishna" required />
+                  <i class="fa-solid fa-user field-icon"></i>
+                </div>
+                <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Enter your name as you want it on your workshop certificate</span>
+                <span class="field-error" id="nameError"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="studentEmail"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                <div class="input-with-icon">
+                  <input type="email" id="studentEmail" placeholder="e.g. aswin@example.com" required />
+                  <i class="fa-solid fa-envelope field-icon"></i>
+                </div>
+                <span class="field-hint"><i class="fa-solid fa-shield"></i> Workshop link & invoice will be delivered to this email</span>
+                <span class="field-error" id="emailError"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="studentPhone"><i class="fa-solid fa-phone"></i> WhatsApp Mobile Number</label>
+                <div class="phone-input-wrap">
+                  <select id="countryCodeSelect" class="country-select" aria-label="Select Country Code">
+                    <option value="+91" selected>🇮🇳 +91</option>
+                    <option value="+971">🇦🇪 +971</option>
+                    <option value="+966">🇸🇦 +966</option>
+                    <option value="+974">🇶🇦 +974</option>
+                    <option value="+968">🇴🇲 +968</option>
+                    <option value="+965">🇰🇼 +965</option>
+                    <option value="+973">🇧🇭 +973</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+65">🇸🇬 +65</option>
+                    <option value="+60">🇲🇾 +60</option>
+                    <option value="+61">🇦🇺 +61</option>
+                  </select>
+                  <input type="tel" id="studentPhone" placeholder="Mobile number" maxlength="15" required />
+                </div>
+                <span class="field-hint"><i class="fa-brands fa-whatsapp text-gold"></i> Session reminders & materials sent via WhatsApp</span>
+                <span class="field-error" id="phoneError"></span>
+              </div>
+
+              <div class="guarantee-pills">
+                <div class="guarantee-pill">
+                  <i class="fa-solid fa-bolt"></i>
+                  <span>Instant Access</span>
+                </div>
+                <div class="guarantee-pill">
+                  <i class="fa-solid fa-shield-halved"></i>
+                  <span>100% Encrypted</span>
+                </div>
+                <div class="guarantee-pill">
+                  <i class="fa-solid fa-receipt"></i>
+                  <span>GST Invoice</span>
+                </div>
+              </div>
+
+              <div class="form-alert" id="formAlert" style="display: none;"></div>
+
+              <button type="submit" class="submit-cta-button" id="paySubmitBtn">
+                <span class="btn-text">Proceed to HDFC SmartGateway →</span>
+                <span class="btn-spinner" style="display: none;"><i class="fa-solid fa-circle-notch fa-spin"></i> Securing session...</span>
+              </button>
+
+              <div class="payment-trust-footer" style="margin-top: 22px;">
+                <div class="hdfc-badge-wrap">
+                  <img src="assets/fok-logo-mono.png" alt="" class="mini-hdfc-logo" style="height: 20px; filter: grayscale(1) opacity(0.8);" />
+                  <span>POWERED BY <strong>HDFC BANK SMARTGATEWAY</strong></span>
+                </div>
+                <div class="trust-icons">
+                  <span><i class="fa-solid fa-shield-halved text-gold"></i> 256-Bit SSL Encrypted</span>
+                  <span><i class="fa-brands fa-google-pay"></i> UPI</span>
+                  <span><i class="fa-solid fa-credit-card"></i> Cards</span>
+                  <span><i class="fa-solid fa-building-columns"></i> Netbanking</span>
+                </div>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer style="margin-top: auto;">
+      <div class="container footer-inner">
+        <div class="footer-brand">
+          <img src="assets/fok-logo.png" alt="FOK Academy" />
+          <div>
+            <b>FOK ACADEMY</b>
+            <span>Practical Amazon Business Education</span>
+          </div>
+        </div>
+        <span>© 2026 FOK Academy • Secure Checkout</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="checkout.js"></script>
+</body>
+</html>
