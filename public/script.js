@@ -48,7 +48,6 @@ const statusEl = document.getElementById("offerStatus");
 const enrollButton = document.getElementById("enrollButton");
 const priceCard = document.querySelector(".price-card");
 const mobileStickyCta = document.getElementById("mobileStickyCta");
-const modalPriceTag = document.getElementById("modalPriceTag");
 
 function updateCountdown() {
   const remaining = Math.max(0, offerExpiresAt - Date.now());
@@ -75,7 +74,6 @@ function updateCountdown() {
     if (statusEl) statusEl.textContent = "The ₹499 introductory offer has expired. Current price: ₹899.";
     if (enrollButton) enrollButton.textContent = "Enroll for ₹899 →";
     if (priceCard) priceCard.classList.add("expired");
-    if (modalPriceTag) modalPriceTag.textContent = "₹899";
 
     if (mobileStickyCta) {
       const priceText = mobileStickyCta.querySelector(".mobile-cta-info span");
@@ -136,52 +134,6 @@ if (mobileStickyCta && priceCard) {
   observer.observe(priceCard);
 }
 
-// 5. Checkout Modal & HDFC SmartGateway API Handler
-const checkoutModal = document.getElementById('checkoutModal');
-const modalCloseBtn = document.getElementById('modalCloseBtn');
-const checkoutForm = document.getElementById('checkoutForm');
-const paySubmitBtn = document.getElementById('paySubmitBtn');
-const btnText = paySubmitBtn?.querySelector('.btn-text');
-const btnSpinner = paySubmitBtn?.querySelector('.btn-spinner');
-const formAlert = document.getElementById('formAlert');
-
-function openCheckoutModal() {
-  const modal = document.getElementById('checkoutModal') || checkoutModal;
-  if (!modal) {
-    console.error('[Checkout Error] #checkoutModal element not found');
-    return;
-  }
-  
-  const mPriceTag = document.getElementById('modalPriceTag') || modalPriceTag;
-  if (mPriceTag) {
-    mPriceTag.textContent = isOfferExpired ? '₹899' : '₹499';
-  }
-
-  const fAlert = document.getElementById('formAlert') || formAlert;
-  if (fAlert) {
-    fAlert.style.display = 'none';
-    fAlert.textContent = '';
-  }
-
-  modal.classList.add('active');
-  modal.style.display = 'flex';
-  modal.style.opacity = '1';
-  modal.style.pointerEvents = 'auto';
-  modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden'; // Prevent background scrolling
-}
-
-function closeCheckoutModal() {
-  const modal = document.getElementById('checkoutModal') || checkoutModal;
-  if (!modal) return;
-  modal.classList.remove('active');
-  modal.style.display = 'none';
-  modal.style.opacity = '0';
-  modal.style.pointerEvents = 'none';
-  modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-
 // Unified Event Delegation for Smooth Section Navigation
 document.addEventListener('click', (e) => {
   const anchor = e.target.closest('a');
@@ -209,112 +161,3 @@ document.addEventListener('click', (e) => {
     }
   }
 });
-
-if (modalCloseBtn) {
-  modalCloseBtn.addEventListener('click', closeCheckoutModal);
-}
-
-if (checkoutModal) {
-  checkoutModal.addEventListener('click', (e) => {
-    if (e.target === checkoutModal) closeCheckoutModal();
-  });
-}
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && checkoutModal?.classList.contains('active')) {
-    closeCheckoutModal();
-  }
-});
-
-// Form Validation & Submission
-if (checkoutForm) {
-  checkoutForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const nameInput = document.getElementById('studentName');
-    const emailInput = document.getElementById('studentEmail');
-    const phoneInput = document.getElementById('studentPhone');
-
-    const nameErr = document.getElementById('nameError');
-    const emailErr = document.getElementById('emailError');
-    const phoneErr = document.getElementById('phoneError');
-
-    // Reset errors
-    if (nameErr) nameErr.textContent = '';
-    if (emailErr) emailErr.textContent = '';
-    if (phoneErr) phoneErr.textContent = '';
-    if (formAlert) formAlert.style.display = 'none';
-
-    let isValid = true;
-
-    // Validate Name
-    const nameVal = nameInput?.value.trim() || '';
-    if (!nameVal || nameVal.length < 2) {
-      if (nameErr) nameErr.textContent = 'Please enter your full name.';
-      isValid = false;
-    }
-
-    // Validate Email
-    const emailVal = emailInput?.value.trim() || '';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailVal)) {
-      if (emailErr) emailErr.textContent = 'Please enter a valid email address.';
-      isValid = false;
-    }
-
-    // Validate Phone & Country Code
-    const countryCodeSelect = document.getElementById('countryCodeSelect');
-    const countryCodeVal = countryCodeSelect?.value || '+91';
-    const phoneVal = phoneInput?.value.replace(/\D/g, '') || '';
-
-    if (countryCodeVal === '+91' && phoneVal.length !== 10) {
-      if (phoneErr) phoneErr.textContent = 'Please enter a valid mobile number.';
-      isValid = false;
-    } else if (phoneVal.length < 7 || phoneVal.length > 15) {
-      if (phoneErr) phoneErr.textContent = 'Please enter a valid mobile number.';
-      isValid = false;
-    }
-
-    if (!isValid) return;
-
-    // Show Loading State
-    if (btnText) btnText.style.display = 'none';
-    if (btnSpinner) btnSpinner.style.display = 'inline-block';
-    if (paySubmitBtn) paySubmitBtn.disabled = true;
-
-    try {
-      // Call Backend API to create HDFC SmartGateway Session
-      const response = await fetch('/api/create-payment-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: nameVal,
-          email: emailVal,
-          phone: `${countryCodeVal}${phoneVal}`,
-          isExpired: isOfferExpired
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.paymentUrl) {
-        // Redirect customer to HDFC SmartGateway Payment Link / Mock Gateway
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error(data.message || 'Could not initiate payment session.');
-      }
-
-    } catch (err) {
-      console.error('[Checkout Error]:', err);
-      if (formAlert) {
-        formAlert.textContent = err.message || 'Failed to connect to HDFC Gateway. Please try again.';
-        formAlert.style.display = 'block';
-      }
-      
-      // Reset Button State
-      if (btnText) btnText.style.display = 'inline-block';
-      if (btnSpinner) btnSpinner.style.display = 'none';
-      if (paySubmitBtn) paySubmitBtn.disabled = false;
-    }
-  });
-}
