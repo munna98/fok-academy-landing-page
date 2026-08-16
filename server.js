@@ -21,8 +21,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static assets from project root
-app.use(express.static(__dirname));
+// Serve static assets from public folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory order database for verification (In production, replace with DB like PostgreSQL/MongoDB)
 const ordersDB = new Map();
@@ -247,7 +247,7 @@ app.post('/api/payment-webhook', (req, res) => {
 
 // Fallback route to serve main landing page
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Export app for Vercel serverless functions
