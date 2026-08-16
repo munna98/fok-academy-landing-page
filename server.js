@@ -250,10 +250,15 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`==================================================`);
-  console.log(`🚀 FOK Academy Server running on http://localhost:${PORT}`);
-  console.log(`💳 HDFC SmartGateway Mode: ${process.env.HDFC_ENV || 'SANDBOX'}`);
-  console.log(`==================================================`);
-});
+// Export app for Vercel serverless functions
+module.exports = app;
+
+// Start server locally when executed directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`==================================================`);
+    console.log(`🚀 FOK Academy Server running on http://localhost:${PORT}`);
+    console.log(`💳 HDFC SmartGateway Mode: ${process.env.HDFC_ENV || 'SANDBOX'}`);
+    console.log(`==================================================`);
+  });
+}
