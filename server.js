@@ -117,6 +117,10 @@ app.post('/api/create-payment-order', async (req, res) => {
     }
 
     // Official HDFC SmartGateway Session API Payload & Headers
+    const paymentPageClientId = config.isSandbox 
+      ? 'hdfcmaster' 
+      : (process.env.HDFC_CLIENT_ID && process.env.HDFC_CLIENT_ID !== 'hdfcmaster' ? process.env.HDFC_CLIENT_ID : config.merchantId);
+
     const payload = {
       order_id: orderId,
       amount: amount.toFixed(2),
@@ -126,7 +130,7 @@ app.post('/api/create-payment-order', async (req, res) => {
       customer_phone: cleanPhone,
       customer_name: name,
       first_name: name.split(' ')[0] || name,
-      payment_page_client_id: config.isSandbox ? 'hdfcmaster' : config.clientId,
+      payment_page_client_id: paymentPageClientId,
       action: 'paymentPage',
       return_url: returnUrl,
       description: 'FOK Academy Amazon Seller Masterclass Course Enrollment'
@@ -143,7 +147,7 @@ app.post('/api/create-payment-order', async (req, res) => {
       'Content-Type': 'application/json'
     };
 
-    console.log(`[HDFC Session Request] BaseURL: ${config.baseUrl}/session, OrderID: ${orderId}`);
+    console.log(`[HDFC Session Request] BaseURL: ${config.baseUrl}/session, OrderID: ${orderId}, Merchant: ${config.merchantId}, ClientID: ${paymentPageClientId}`);
 
     const response = await axios.post(`${config.baseUrl}/session`, payload, {
       headers,
@@ -171,9 +175,15 @@ app.post('/api/create-payment-order', async (req, res) => {
     const errorDetails = error.response?.data || error.message;
     console.error('[HDFC Gateway Session Error]:', JSON.stringify(errorDetails));
 
+    const errorMessage = error.response?.data?.error_message 
+      || error.response?.data?.message 
+      || (typeof error.response?.data === 'string' ? error.response.data : null)
+      || error.message 
+      || 'Payment session creation failed.';
+
     return res.status(500).json({
       success: false,
-      message: error.response?.data?.error_message || 'Payment session creation failed.',
+      message: errorMessage,
       error: errorDetails
     });
   }

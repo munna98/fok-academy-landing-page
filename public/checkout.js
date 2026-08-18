@@ -145,7 +145,8 @@ if (checkoutForm) {
       if (data.success && data.paymentUrl) {
         window.location.href = data.paymentUrl;
       } else {
-        throw new Error(data.message || 'Could not initiate HDFC payment session.');
+        const errorMsg = data.message || data.error?.error_message || data.error?.user_message || 'Could not initiate HDFC payment session.';
+        throw new Error(errorMsg);
       }
 
     } catch (err) {
