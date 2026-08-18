@@ -136,9 +136,10 @@ app.post('/api/create-payment-order', async (req, res) => {
       description: 'FOK Academy Amazon Seller Masterclass Course Enrollment'
     };
 
-    // Basic Auth header using HDFC API key
-    const authString = `${config.apiKey}:`;
-    const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+    // Basic Auth header using HDFC API key (Base64 encoding without trailing colon as per HDFC spec)
+    const rawApiKey = (config.apiKey || '').trim();
+    const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
+    const authHeader = rawApiKey.startsWith('Basic ') ? rawApiKey : `Basic ${base64ApiKey}`;
 
     const headers = {
       'x-merchantid': config.merchantId,
@@ -232,8 +233,9 @@ app.get('/api/verify-payment', async (req, res) => {
 
     if (!isMockMode && (!order.status || order.status === 'PENDING')) {
       try {
-        const authString = `${config.apiKey}:`;
-        const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+        const rawApiKey = (config.apiKey || '').trim();
+        const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
+        const authHeader = rawApiKey.startsWith('Basic ') ? rawApiKey : `Basic ${base64ApiKey}`;
         const customerId = order.customerId || `cust${(order.customerPhone || '').replace(/\D/g, '')}`;
 
         const hdfcRes = await axios.get(`${config.baseUrl}/orders/${order_id}`, {
