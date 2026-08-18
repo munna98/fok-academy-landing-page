@@ -302,6 +302,18 @@ app.post('/api/payment-webhook', (req, res) => {
   }
 });
 
+// Handle HTTP POST and GET redirects to payment-status.html from HDFC SmartGateway
+app.all('/payment-status.html', (req, res) => {
+  if (req.method === 'POST') {
+    const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
+    const status = req.body?.status || req.body?.order_status || req.query?.status;
+    if (orderId) {
+      return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}${status ? `&status=${encodeURIComponent(status)}` : ''}`);
+    }
+  }
+  res.sendFile(path.join(__dirname, 'public', 'payment-status.html'));
+});
+
 // Fallback route to serve main landing page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
