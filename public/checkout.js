@@ -43,6 +43,8 @@ const checkoutPriceTag = document.getElementById("checkoutPriceTag");
 const pricingNote = document.getElementById("pricingNote");
 const timerBannerLabel = document.getElementById("timerBannerLabel");
 
+let timer = null;
+
 function updateCheckoutTimer() {
   const remaining = Math.max(0, offerExpiresAt - Date.now());
   const totalSeconds = Math.ceil(remaining / 1000);
@@ -58,7 +60,7 @@ function updateCheckoutTimer() {
 
   if (remaining <= 0) {
     isOfferExpired = true;
-    clearInterval(timer);
+    if (timer) clearInterval(timer);
 
     if (topCountdown) topCountdown.textContent = "EXPIRED";
     if (checkoutClock) checkoutClock.textContent = "00:00";
@@ -69,7 +71,7 @@ function updateCheckoutTimer() {
 }
 
 updateCheckoutTimer();
-const timer = setInterval(updateCheckoutTimer, 250);
+timer = setInterval(updateCheckoutTimer, 250);
 
 // Form Submission & HDFC Payment Link Generation
 const checkoutForm = document.getElementById('checkoutForm');

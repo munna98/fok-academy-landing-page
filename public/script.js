@@ -49,6 +49,8 @@ const enrollButton = document.getElementById("enrollButton");
 const priceCard = document.querySelector(".price-card");
 const mobileStickyCta = document.getElementById("mobileStickyCta");
 
+let timer = null;
+
 function updateCountdown() {
   const remaining = Math.max(0, offerExpiresAt - Date.now());
   const totalSeconds = Math.ceil(remaining / 1000);
@@ -64,7 +66,7 @@ function updateCountdown() {
 
   if (remaining <= 0) {
     isOfferExpired = true;
-    clearInterval(timer);
+    if (timer) clearInterval(timer);
 
     if (topCountdown) topCountdown.textContent = "EXPIRED";
     if (minutesEl) minutesEl.textContent = "00";
@@ -83,7 +85,7 @@ function updateCountdown() {
 }
 
 updateCountdown();
-const timer = setInterval(updateCountdown, 250);
+timer = setInterval(updateCountdown, 250);
 
 // 2. Single Open FAQ Accordion
 document.querySelectorAll('.faq-list details').forEach((detail) => {
