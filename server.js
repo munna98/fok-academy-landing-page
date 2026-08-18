@@ -31,15 +31,15 @@ const ordersDB = new Map();
 const getHdfcConfig = () => {
   const isSandbox = (process.env.HDFC_ENV || 'SANDBOX').toUpperCase() === 'SANDBOX';
   const baseUrl = isSandbox
-    ? 'https://smartgateway-sandbox.hdfcbank.com'
-    : 'https://api.smartgateway.hdfcbank.com';
+    ? 'https://smartgateway.hdfcuat.bank.in'
+    : 'https://smartgateway.hdfc.bank.in';
   
   return {
     baseUrl,
     merchantId: process.env.HDFC_MERCHANT_ID || 'FOK_MERCHANT_TEST',
-    clientId: process.env.HDFC_CLIENT_ID || 'FOK_CLIENT_TEST',
+    clientId: process.env.HDFC_CLIENT_ID || 'hdfcmaster',
     apiKey: process.env.HDFC_API_KEY || 'test_api_key',
-    responseSecret: process.env.HDFC_RESPONSE_SECRET || 'test_secret',
+    responseSecret: process.env.HDFC_RESPONSE_SECRET || '',
     isSandbox
   };
 };
@@ -59,23 +59,36 @@ app.post('/api/create-payment-order', async (req, res) => {
       });
     }
 
-    // Determine amount (enforced server-side)
-    const offerPrice = parseFloat(process.env.OFFER_PRICE || '499');
-    const regularPrice = parseFloat(process.env.REGULAR_PRICE || '899');
-    const amount = isExpired ? regularPrice : offerPrice;
+    // Extract all numeric digits from phone number (supports international and variable length numbers)
+    const cleanPhone = phone.replace(/\D/g, '') || '9999999999';
 
-    // Generate unique order ID
-    const orderId = `FOK_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-    const returnUrl = process.env.RETURN_URL || `http://localhost:${PORT}/payment-status.html`;
+    // Determine amount (enforced server-side)
+    let amount;
+    if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE)) && parseFloat(process.env.TEST_PRICE) > 0) {
+      amount = parseFloat(process.env.TEST_PRICE);
+    } else {
+      const offerPrice = parseFloat(process.env.OFFER_PRICE || '499');
+      const regularPrice = parseFloat(process.env.REGULAR_PRICE || '899');
+      amount = isExpired ? regularPrice : offerPrice;
+    }
+
+    // Generate unique order ID (must be alphanumeric, no special chars, < 21 chars)
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const orderId = `FOK${Date.now()}${randomSuffix}`.slice(0, 20);
+
+    const appBaseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const returnUrl = process.env.RETURN_URL || `${appBaseUrl}/payment-status.html`;
 
     const config = getHdfcConfig();
+    const customerId = `cust${cleanPhone}`;
 
     // Store pending order details
     const orderData = {
       orderId,
       customerName: name,
       customerEmail: email,
-      customerPhone: phone,
+      customerPhone: cleanPhone,
+      customerId,
       amount,
       currency: 'INR',
       status: 'PENDING',
@@ -91,7 +104,7 @@ app.post('/api/create-payment-order', async (req, res) => {
     if (isMockMode) {
       console.log(`[HDFC Gateway] Running in Mock/Sandbox Mode for order ${orderId}`);
       
-      const mockCheckoutUrl = `${process.env.APP_BASE_URL || `http://localhost:${PORT}`}/payment-status.html?mock_checkout=1&order_id=${orderId}&amount=${amount}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`;
+      const mockCheckoutUrl = `${appBaseUrl}/payment-status.html?mock_checkout=1&order_id=${orderId}&amount=${amount}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(cleanPhone)}`;
 
       return res.json({
         success: true,
@@ -103,33 +116,45 @@ app.post('/api/create-payment-order', async (req, res) => {
       });
     }
 
-    // Official HDFC SmartGateway Session API Integration
+    // Official HDFC SmartGateway Session API Payload & Headers
     const payload = {
       order_id: orderId,
       amount: amount.toFixed(2),
       currency: 'INR',
-      customer_id: `CUST_${phone.replace(/\D/g, '')}`,
+      customer_id: customerId,
       customer_email: email,
-      customer_phone: phone,
+      customer_phone: cleanPhone,
       customer_name: name,
+      first_name: name.split(' ')[0] || name,
+      payment_page_client_id: config.isSandbox ? 'hdfcmaster' : config.clientId,
+      action: 'paymentPage',
       return_url: returnUrl,
       description: 'FOK Academy Amazon Seller Masterclass Course Enrollment'
     };
 
-    const authHeader = `Basic ${Buffer.from(`${config.apiKey}:`).toString('base64')}`;
+    // Basic Auth header using HDFC API key
+    const authString = `${config.apiKey}:`;
+    const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+
+    const headers = {
+      'x-merchantid': config.merchantId,
+      'x-customerid': customerId,
+      'Authorization': authHeader,
+      'Content-Type': 'application/json'
+    };
+
+    console.log(`[HDFC Session Request] BaseURL: ${config.baseUrl}/session, OrderID: ${orderId}`);
 
     const response = await axios.post(`${config.baseUrl}/session`, payload, {
-      headers: {
-        'x-merchantid': config.merchantId,
-        'x-client-id': config.clientId,
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      },
+      headers,
       timeout: 10000
     });
 
-    if (response.data && (response.data.payment_links?.web || response.data.payment_url || response.data.sdk_payload)) {
-      const paymentUrl = response.data.payment_links?.web || response.data.payment_url;
+    if (response.data && (response.data.payment_links?.web || response.data.payment_url || response.data.payment_links)) {
+      const paymentUrl = typeof response.data.payment_links === 'string' 
+        ? response.data.payment_links 
+        : (response.data.payment_links?.web || response.data.payment_url);
+
       return res.json({
         success: true,
         orderId,
@@ -139,24 +164,24 @@ app.post('/api/create-payment-order', async (req, res) => {
         sessionData: response.data
       });
     } else {
-      throw new Error('Invalid session response from HDFC SmartGateway');
+      throw new Error(response.data?.error_message || 'Invalid session response structure from HDFC SmartGateway');
     }
 
   } catch (error) {
-    console.error('[HDFC Gateway Error]:', error.response?.data || error.message);
+    const errorDetails = error.response?.data || error.message;
+    console.error('[HDFC Gateway Session Error]:', JSON.stringify(errorDetails));
 
-    // Graceful fallback response if network/gateway error occurs during test
     return res.status(500).json({
       success: false,
-      message: 'Payment session creation failed.',
-      error: error.response?.data || error.message
+      message: error.response?.data?.error_message || 'Payment session creation failed.',
+      error: errorDetails
     });
   }
 });
 
 /**
  * 2. GET /api/verify-payment
- * Verifies order status by checking internal DB or calling HDFC SmartGateway status API
+ * Verifies order status by checking internal DB or calling HDFC SmartGateway Status API S2S
  */
 app.get('/api/verify-payment', async (req, res) => {
   try {
@@ -189,6 +214,38 @@ app.get('/api/verify-payment', async (req, res) => {
         customerName: 'FOK Student',
         customerEmail: 'student@example.com'
       };
+    }
+
+    // If real API credentials are configured, fetch live status from HDFC SmartGateway S2S API
+    const config = getHdfcConfig();
+    const isMockMode = config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
+
+    if (!isMockMode && (!order.status || order.status === 'PENDING')) {
+      try {
+        const authString = `${config.apiKey}:`;
+        const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
+        const customerId = order.customerId || `cust${(order.customerPhone || '').replace(/\D/g, '')}`;
+
+        const hdfcRes = await axios.get(`${config.baseUrl}/orders/${order_id}`, {
+          headers: {
+            'x-merchantid': config.merchantId,
+            'x-customerid': customerId,
+            'Authorization': authHeader,
+            'Content-Type': 'application/json'
+          },
+          timeout: 7000
+        });
+
+        if (hdfcRes.data && hdfcRes.data.status) {
+          order.status = hdfcRes.data.status;
+          order.transactionId = hdfcRes.data.txn_id || hdfcRes.data.order_id || order.transactionId;
+          order.hdfcDetails = hdfcRes.data;
+          ordersDB.set(order_id, order);
+          console.log(`[HDFC Status API S2S] Order ${order_id} verified as ${order.status}`);
+        }
+      } catch (hdfcErr) {
+        console.warn('[HDFC Status Check Notice]:', hdfcErr.response?.data || hdfcErr.message);
+      }
     }
 
     return res.json({
