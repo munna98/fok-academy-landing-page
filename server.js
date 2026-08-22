@@ -302,10 +302,9 @@ app.get('/api/verify-payment', async (req, res) => {
       order.verified = true;
       order.verificationSource = 'mock';
     } else if (config.isSandbox) {
-      // HDFC UAT can report success-like statuses without a real money movement.
-      // Never show sandbox orders as fully paid in the student-facing UI.
-      order.verified = false;
-      order.verificationSource = 'sandbox';
+      // Allow demo success screens in UAT even though no real money moves there.
+      order.verified = order.status === 'CHARGED';
+      order.verificationSource = 'sandbox-demo';
     } else if (typeof order.verified !== 'boolean') {
       order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
     }
