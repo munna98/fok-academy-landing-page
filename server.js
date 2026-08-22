@@ -115,7 +115,7 @@ app.post('/api/create-payment-order', async (req, res) => {
     console.log(`[HDFC Gateway] Creating order ${orderId} for ${name} (${amount} INR)`);
 
     // Check if real API credentials are set or fallback to Interactive Mock Gateway
-    const isMockMode = config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
+    const isMockMode = config.isSandbox || config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
 
     if (isMockMode) {
       console.log(`[HDFC Gateway] Running in Mock/Sandbox Mode for order ${orderId}`);
@@ -242,7 +242,7 @@ app.get('/api/verify-payment', async (req, res) => {
 
     // If real API credentials are configured, fetch live status from HDFC SmartGateway S2S API
     const config = getHdfcConfig();
-    const isMockMode = config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
+    const isMockMode = config.isSandbox || config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
 
     if (!isMockMode && (!order || !order.status || order.status === 'PENDING')) {
       try {
@@ -301,6 +301,11 @@ app.get('/api/verify-payment', async (req, res) => {
     if (mock_action === 'SUCCESS') {
       order.verified = true;
       order.verificationSource = 'mock';
+    } else if (config.isSandbox) {
+      // HDFC UAT can report success-like statuses without a real money movement.
+      // Never show sandbox orders as fully paid in the student-facing UI.
+      order.verified = false;
+      order.verificationSource = 'sandbox';
     } else if (typeof order.verified !== 'boolean') {
       order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
     }
