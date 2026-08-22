@@ -115,7 +115,7 @@ app.post('/api/create-payment-order', async (req, res) => {
     console.log(`[HDFC Gateway] Creating order ${orderId} for ${name} (${amount} INR)`);
 
     // Check if real API credentials are set or fallback to Interactive Mock Gateway
-    const isMockMode = config.isSandbox || config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
+    const isMockMode = config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
 
     if (isMockMode) {
       console.log(`[HDFC Gateway] Running in Mock/Sandbox Mode for order ${orderId}`);
