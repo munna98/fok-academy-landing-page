@@ -171,10 +171,14 @@ app.post('/api/create-payment-order', async (req, res) => {
       timeout: 10000
     });
 
+    console.log('[HDFC Session Response]:', JSON.stringify(response.data, null, 2));
+
     if (response.data && (response.data.payment_links?.web || response.data.payment_url || response.data.payment_links)) {
       const paymentUrl = typeof response.data.payment_links === 'string' 
         ? response.data.payment_links 
         : (response.data.payment_links?.web || response.data.payment_url);
+
+      console.log('[HDFC Checkout URL]:', paymentUrl);
 
       return res.json({
         success: true,
