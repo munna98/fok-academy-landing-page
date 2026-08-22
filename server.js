@@ -44,6 +44,22 @@ const getHdfcConfig = () => {
   };
 };
 
+const buildGatewayReturnUrl = (appBaseUrl) => {
+  const configuredReturnUrl = (process.env.RETURN_URL || '').trim();
+
+  if (!configuredReturnUrl) {
+    return `${appBaseUrl}/api/payment-return`;
+  }
+
+  // Payment gateways often POST back to the return URL, so route through
+  // a backend endpoint before redirecting to the user-facing status page.
+  if (configuredReturnUrl.endsWith('/payment-status.html')) {
+    return configuredReturnUrl.replace(/\/payment-status\.html$/, '/api/payment-return');
+  }
+
+  return configuredReturnUrl;
+};
+
 /**
  * 1. POST /api/create-payment-order
  * Creates an order session with HDFC SmartGateway (or mock fallback for local test mode)
@@ -77,7 +93,7 @@ app.post('/api/create-payment-order', async (req, res) => {
     const orderId = `FOK${Date.now()}${randomSuffix}`.slice(0, 20);
 
     const appBaseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    const returnUrl = process.env.RETURN_URL || `${appBaseUrl}/payment-status.html`;
+    const returnUrl = buildGatewayReturnUrl(appBaseUrl);
 
     const config = getHdfcConfig();
     const customerId = `cust${cleanPhone}`;
@@ -314,7 +330,20 @@ app.post('/api/payment-webhook', (req, res) => {
   }
 });
 
-// Handle HTTP POST and GET redirects to payment-status.html from HDFC SmartGateway
+// Accept HDFC/Juspay browser returns, then redirect to the user-facing status page.
+app.all('/api/payment-return', (req, res) => {
+  const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
+  const status = req.body?.status || req.body?.order_status || req.query?.status;
+
+  if (orderId) {
+    return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}${status ? `&status=${encodeURIComponent(status)}` : ''}`);
+  }
+
+  return res.redirect('/payment-status.html');
+});
+
+// Handle direct HTTP POST and GET redirects to payment-status.html from HDFC SmartGateway
+// for backward compatibility with older RETURN_URL values.
 app.all('/payment-status.html', (req, res) => {
   if (req.method === 'POST') {
     const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
