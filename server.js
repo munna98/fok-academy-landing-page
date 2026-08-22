@@ -236,27 +236,20 @@ app.get('/api/verify-payment', async (req, res) => {
       ordersDB.set(order_id, order);
     }
 
-    if (!order) {
-      // Fallback order info for direct link testing
-      order = {
-        orderId: order_id,
-        amount: 499,
-        status: mock_action === 'SUCCESS' ? 'CHARGED' : 'PENDING',
-        customerName: 'FOK Student',
-        customerEmail: 'student@example.com'
-      };
+    if (order && !order.orderId) {
+      order.orderId = order_id;
     }
 
     // If real API credentials are configured, fetch live status from HDFC SmartGateway S2S API
     const config = getHdfcConfig();
     const isMockMode = config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
 
-    if (!isMockMode && (!order.status || order.status === 'PENDING')) {
+    if (!isMockMode && (!order || !order.status || order.status === 'PENDING')) {
       try {
         const rawApiKey = (config.apiKey || '').trim();
         const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
         const authHeader = rawApiKey.startsWith('Basic ') ? rawApiKey : `Basic ${base64ApiKey}`;
-        const customerId = order.customerId || `cust${(order.customerPhone || '').replace(/\D/g, '')}`;
+        const customerId = order?.customerId || `cust${(order?.customerPhone || '').replace(/\D/g, '')}`;
 
         const hdfcRes = await axios.get(`${config.baseUrl}/orders/${order_id}`, {
           headers: {
@@ -269,15 +262,47 @@ app.get('/api/verify-payment', async (req, res) => {
         });
 
         if (hdfcRes.data && hdfcRes.data.status) {
+          console.log('[HDFC Order Status Response]:', JSON.stringify(hdfcRes.data, null, 2));
+
+          if (!order) {
+            order = {
+              orderId: hdfcRes.data.order_id || order_id
+            };
+          }
+
           order.status = hdfcRes.data.status;
-          order.transactionId = hdfcRes.data.txn_id || hdfcRes.data.order_id || order.transactionId;
+          order.amount = parseFloat(hdfcRes.data.amount || order.amount || 0);
+          order.currency = hdfcRes.data.currency || order.currency || 'INR';
+          order.customerName = hdfcRes.data.customer_name || order.customerName || '';
+          order.customerEmail = hdfcRes.data.customer_email || order.customerEmail || '';
+          order.customerPhone = hdfcRes.data.customer_phone || order.customerPhone || '';
+          order.transactionId = hdfcRes.data.txn_id || order.transactionId || '';
           order.hdfcDetails = hdfcRes.data;
+          order.verificationSource = 'status_api';
+          order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
           ordersDB.set(order_id, order);
           console.log(`[HDFC Status API S2S] Order ${order_id} verified as ${order.status}`);
         }
       } catch (hdfcErr) {
         console.warn('[HDFC Status Check Notice]:', hdfcErr.response?.data || hdfcErr.message);
       }
+    }
+
+    if (!order) {
+      order = {
+        orderId: order_id,
+        amount: 0,
+        status: 'PENDING',
+        verified: false,
+        verificationSource: 'unknown'
+      };
+    }
+
+    if (mock_action === 'SUCCESS') {
+      order.verified = true;
+      order.verificationSource = 'mock';
+    } else if (typeof order.verified !== 'boolean') {
+      order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
     }
 
     return res.json({
@@ -337,10 +362,9 @@ app.post('/api/payment-webhook', (req, res) => {
 // Accept HDFC/Juspay browser returns, then redirect to the user-facing status page.
 app.all('/api/payment-return', (req, res) => {
   const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
-  const status = req.body?.status || req.body?.order_status || req.query?.status;
 
   if (orderId) {
-    return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}${status ? `&status=${encodeURIComponent(status)}` : ''}`);
+    return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}`);
   }
 
   return res.redirect('/payment-status.html');
@@ -351,9 +375,8 @@ app.all('/api/payment-return', (req, res) => {
 app.all('/payment-status.html', (req, res) => {
   if (req.method === 'POST') {
     const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
-    const status = req.body?.status || req.body?.order_status || req.query?.status;
     if (orderId) {
-      return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}${status ? `&status=${encodeURIComponent(status)}` : ''}`);
+      return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}`);
     }
   }
   res.sendFile(path.join(__dirname, 'public', 'payment-status.html'));

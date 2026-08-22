@@ -279,7 +279,7 @@
           const res = await fetch(`/api/verify-payment?order_id=${encodeURIComponent(orderId)}${mockAction ? `&mock_action=${mockAction}` : ''}`);
           const data = await res.json();
 
-          if (data.success && data.order && data.order.status === 'CHARGED') {
+          if (data.success && data.order && data.order.verified === true) {
             // SUCCESSFUL PAYMENT SCREEN
             statusCard.innerHTML = `
               <div class="status-icon success">
@@ -302,6 +302,30 @@
                 </a>
                 <a href="index.html" class="btn btn-gold full" style="background: transparent; border: 1px solid var(--gold);">
                   Return to Home Page
+                </a>
+              </div>
+            `;
+          } else if (data.success && data.order && data.order.status === 'CHARGED') {
+            statusCard.innerHTML = `
+              <div class="status-icon loading">
+                <i class="fa-solid fa-hourglass-half"></i>
+              </div>
+              <h1>Payment Awaiting Confirmation</h1>
+              <p>We received a sandbox gateway update, but the payment is not fully verified yet. Please wait a moment and check again.</p>
+
+              <div class="receipt-box">
+                <div class="receipt-row"><span>Order ID</span><strong>${data.order.orderId}</strong></div>
+                <div class="receipt-row"><span>Amount</span><strong>₹${data.order.amount || amount}.00</strong></div>
+                <div class="receipt-row"><span>Status</span><strong style="color: var(--gold);">${data.order.status}</strong></div>
+                <div class="receipt-row"><span>Verification</span><strong>${data.order.verificationSource || 'Pending'}</strong></div>
+              </div>
+
+              <div class="action-group">
+                <a href="javascript:window.location.reload()" class="btn btn-gold full btn-large">
+                  Check Status Again
+                </a>
+                <a href="index.html#offer" class="btn btn-gold full" style="background: transparent; border: 1px solid var(--gold);">
+                  Return to Checkout
                 </a>
               </div>
             `;
