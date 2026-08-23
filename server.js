@@ -244,6 +244,28 @@ app.get('/api/verify-payment', async (req, res) => {
     const config = getHdfcConfig();
     const isMockMode = config.isSandbox || config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
 
+    if (config.isSandbox && !mock_action) {
+      if (!order) {
+        order = {
+          orderId: order_id,
+          amount: parseFloat(process.env.TEST_PRICE || process.env.OFFER_PRICE || '499'),
+          currency: 'INR',
+          customerName: 'Student',
+          status: 'CHARGED'
+        };
+      }
+
+      order.status = 'CHARGED';
+      order.verified = true;
+      order.verificationSource = 'sandbox-demo';
+      order.transactionId = order.transactionId || `UAT_${Date.now()}`;
+
+      return res.json({
+        success: true,
+        order
+      });
+    }
+
     if ((!order || !order.status || order.status === 'PENDING') && (!config.merchantId.includes('TEST') || config.isSandbox)) {
       try {
         const rawApiKey = (config.apiKey || '').trim();
