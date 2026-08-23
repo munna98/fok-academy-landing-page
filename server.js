@@ -244,7 +244,7 @@ app.get('/api/verify-payment', async (req, res) => {
     const config = getHdfcConfig();
     const isMockMode = config.isSandbox || config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
 
-    if (!isMockMode && (!order || !order.status || order.status === 'PENDING')) {
+    if ((!order || !order.status || order.status === 'PENDING') && (!config.merchantId.includes('TEST') || config.isSandbox)) {
       try {
         const rawApiKey = (config.apiKey || '').trim();
         const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
