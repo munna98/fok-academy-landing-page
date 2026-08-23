@@ -60,6 +60,19 @@ const buildGatewayReturnUrl = (appBaseUrl) => {
   return configuredReturnUrl;
 };
 
+const buildCustomerId = ({ email, phone }) => {
+  const normalizedEmail = (email || '').trim().toLowerCase();
+  const normalizedPhone = (phone || '').replace(/\D/g, '');
+  const rawCustomerKey = `${normalizedEmail}|${normalizedPhone}`;
+  const hash = crypto
+    .createHash('sha256')
+    .update(rawCustomerKey)
+    .digest('hex')
+    .slice(0, 18);
+
+  return `cust_${hash}`;
+};
+
 /**
  * 1. POST /api/create-payment-order
  * Creates an order session with HDFC SmartGateway (or mock fallback for local test mode)
@@ -96,7 +109,7 @@ app.post('/api/create-payment-order', async (req, res) => {
     const returnUrl = buildGatewayReturnUrl(appBaseUrl);
 
     const config = getHdfcConfig();
-    const customerId = `cust${cleanPhone}`;
+    const customerId = buildCustomerId({ email, phone: cleanPhone });
 
     // Store pending order details
     const orderData = {
