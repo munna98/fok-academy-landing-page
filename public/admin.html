@@ -288,6 +288,40 @@
       cursor: pointer;
     }
 
+    .date-range-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .date-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .date-input-wrap input[type="date"] {
+      padding: 9px 12px;
+      border: 1px solid rgba(25, 50, 76, 0.14);
+      border-radius: 12px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      color: var(--navy);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .date-input-wrap input[type="date"]:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(231, 169, 21, 0.14);
+    }
+
     .btn-refresh {
       display: inline-flex;
       align-items: center;
@@ -540,14 +574,26 @@
           </div>
 
           <div class="filter-actions">
-            <select id="dateFilter" class="select-filter">
-              <option value="ALL">All Dates</option>
-              <option value="TODAY">Today</option>
-              <option value="YESTERDAY">Yesterday</option>
-              <option value="THIS_MONTH">This Month</option>
-              <option value="PREV_MONTH">Previous Month</option>
-              <option value="THIS_FY">This FY</option>
-            </select>
+            <div class="date-range-group">
+              <div class="date-input-wrap">
+                <label for="fromDate">From</label>
+                <input type="date" id="fromDate" />
+              </div>
+              <div class="date-input-wrap">
+                <label for="toDate">To</label>
+                <input type="date" id="toDate" />
+              </div>
+
+              <select id="dateFilter" class="select-filter">
+                <option value="ALL">All Dates</option>
+                <option value="TODAY">Today</option>
+                <option value="YESTERDAY">Yesterday</option>
+                <option value="THIS_MONTH">This Month</option>
+                <option value="PREV_MONTH">Previous Month</option>
+                <option value="THIS_FY">This FY</option>
+                <option value="CUSTOM" hidden>Custom Range</option>
+              </select>
+            </div>
 
             <select id="statusFilter" class="select-filter">
               <option value="ALL">All Statuses</option>
@@ -670,6 +716,14 @@
       document.getElementById('statRevenue').textContent = '₹' + totalRevenue.toLocaleString('en-IN');
     }
 
+    function formatDateForInput(date) {
+      if (!date) return '';
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
     function getDateRangeBounds(rangeKey) {
       const now = new Date();
       
@@ -714,11 +768,36 @@
       return null;
     }
 
+    function syncDateInputsFromPreset(rangeKey) {
+      const bounds = getDateRangeBounds(rangeKey);
+      const fromInput = document.getElementById('fromDate');
+      const toInput = document.getElementById('toDate');
+
+      if (!bounds) {
+        fromInput.value = '';
+        toInput.value = '';
+      } else {
+        fromInput.value = formatDateForInput(bounds.start);
+        toInput.value = formatDateForInput(bounds.end);
+      }
+    }
+
+    function getActiveDateBounds() {
+      const fromVal = document.getElementById('fromDate').value;
+      const toVal = document.getElementById('toDate').value;
+
+      if (!fromVal && !toVal) return null;
+
+      const start = fromVal ? new Date(`${fromVal}T00:00:00.000`) : new Date(0);
+      const end = toVal ? new Date(`${toVal}T23:59:59.999`) : new Date(8640000000000000);
+
+      return { start, end };
+    }
+
     function renderOrders() {
       const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const selectedStatus = document.getElementById('statusFilter').value;
-      const selectedDateRange = document.getElementById('dateFilter').value;
-      const bounds = getDateRangeBounds(selectedDateRange);
+      const bounds = getActiveDateBounds();
 
       const filtered = rawOrders.filter(o => {
         // Date range check
@@ -830,7 +909,22 @@
     }
 
     document.getElementById('searchInput').addEventListener('input', renderOrders);
-    document.getElementById('dateFilter').addEventListener('change', renderOrders);
+    
+    document.getElementById('dateFilter').addEventListener('change', (e) => {
+      syncDateInputsFromPreset(e.target.value);
+      renderOrders();
+    });
+
+    document.getElementById('fromDate').addEventListener('change', () => {
+      document.getElementById('dateFilter').value = 'CUSTOM';
+      renderOrders();
+    });
+
+    document.getElementById('toDate').addEventListener('change', () => {
+      document.getElementById('dateFilter').value = 'CUSTOM';
+      renderOrders();
+    });
+
     document.getElementById('statusFilter').addEventListener('change', renderOrders);
     document.getElementById('btnRefresh').addEventListener('click', loadOrders);
 
