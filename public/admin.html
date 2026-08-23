@@ -540,6 +540,15 @@
           </div>
 
           <div class="filter-actions">
+            <select id="dateFilter" class="select-filter">
+              <option value="ALL">All Dates</option>
+              <option value="TODAY">Today</option>
+              <option value="YESTERDAY">Yesterday</option>
+              <option value="THIS_MONTH">This Month</option>
+              <option value="PREV_MONTH">Previous Month</option>
+              <option value="THIS_FY">This FY</option>
+            </select>
+
             <select id="statusFilter" class="select-filter">
               <option value="ALL">All Statuses</option>
               <option value="CHARGED">CHARGED (Paid)</option>
@@ -661,11 +670,66 @@
       document.getElementById('statRevenue').textContent = '₹' + totalRevenue.toLocaleString('en-IN');
     }
 
+    function getDateRangeBounds(rangeKey) {
+      const now = new Date();
+      
+      if (rangeKey === 'TODAY') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        return { start, end };
+      }
+
+      if (rangeKey === 'YESTERDAY') {
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const start = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0, 0);
+        const end = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+        return { start, end };
+      }
+
+      if (rangeKey === 'THIS_MONTH') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        return { start, end };
+      }
+
+      if (rangeKey === 'PREV_MONTH') {
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        return { start, end };
+      }
+
+      if (rangeKey === 'THIS_FY') {
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0 = Jan, 3 = April
+        let fyStartYear = currentYear;
+        if (currentMonth < 3) {
+          fyStartYear = currentYear - 1;
+        }
+        const start = new Date(fyStartYear, 3, 1, 0, 0, 0, 0); // April 1
+        const end = new Date(fyStartYear + 1, 2, 31, 23, 59, 59, 999); // March 31
+        return { start, end };
+      }
+
+      return null;
+    }
+
     function renderOrders() {
       const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const selectedStatus = document.getElementById('statusFilter').value;
+      const selectedDateRange = document.getElementById('dateFilter').value;
+      const bounds = getDateRangeBounds(selectedDateRange);
 
       const filtered = rawOrders.filter(o => {
+        // Date range check
+        if (bounds) {
+          if (!o.created_at) return false;
+          const orderDate = new Date(o.created_at);
+          if (isNaN(orderDate.getTime())) return false;
+          if (orderDate < bounds.start || orderDate > bounds.end) return false;
+        }
+
+        // Search query check
         const matchesQuery = !query || 
           (o.order_id && o.order_id.toLowerCase().includes(query)) ||
           (o.customer_name && o.customer_name.toLowerCase().includes(query)) ||
@@ -673,6 +737,7 @@
           (o.customer_phone && o.customer_phone.toLowerCase().includes(query)) ||
           (o.transaction_id && o.transaction_id.toLowerCase().includes(query));
 
+        // Status check
         let matchesStatus = true;
         if (selectedStatus === 'CHARGED') {
           matchesStatus = o.status === 'CHARGED' || o.status === 'SUCCESS' || o.verified;
@@ -684,6 +749,15 @@
 
         return matchesQuery && matchesStatus;
       });
+
+      // Recalculate metrics for date range
+      const dateFilteredOrders = bounds ? rawOrders.filter(o => {
+        if (!o.created_at) return false;
+        const orderDate = new Date(o.created_at);
+        return !isNaN(orderDate.getTime()) && orderDate >= bounds.start && orderDate <= bounds.end;
+      }) : rawOrders;
+
+      updateMetrics(dateFilteredOrders);
 
       const tbody = document.getElementById('ordersTbody');
 
@@ -756,6 +830,7 @@
     }
 
     document.getElementById('searchInput').addEventListener('input', renderOrders);
+    document.getElementById('dateFilter').addEventListener('change', renderOrders);
     document.getElementById('statusFilter').addEventListener('change', renderOrders);
     document.getElementById('btnRefresh').addEventListener('click', loadOrders);
 
