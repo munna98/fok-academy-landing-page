@@ -13,6 +13,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Normalize request URL for Vercel serverless rewrites
+app.use((req, res, next) => {
+  const forwardedUrl = req.headers['x-forwarded-url'] || req.headers['x-matched-path'];
+  if (forwardedUrl) {
+    try {
+      const parsed = new URL(forwardedUrl, 'http://localhost');
+      req.url = parsed.pathname + parsed.search;
+    } catch (e) {
+      // ignore
+    }
+  }
+  next();
+});
+
 // Prevent browser caching during local testing & development
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

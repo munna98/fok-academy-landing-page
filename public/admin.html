@@ -588,7 +588,8 @@
     async function checkAuthAndFetch() {
       try {
         const meRes = await fetch('/api/admin/me', { credentials: 'include' });
-        if (!meRes.ok) {
+        const meContentType = meRes.headers.get('content-type') || '';
+        if (!meRes.ok || !meContentType.includes('application/json')) {
           window.location.replace('/admin-login.html');
           return;
         }
@@ -613,7 +614,8 @@
 
       try {
         const res = await fetch('/api/admin/orders?limit=200', { credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to load orders');
+        const resContentType = res.headers.get('content-type') || '';
+        if (!res.ok || !resContentType.includes('application/json')) throw new Error('Failed to load orders');
 
         const data = await res.json();
         rawOrders = data.orders || [];
