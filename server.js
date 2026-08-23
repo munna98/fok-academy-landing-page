@@ -73,6 +73,113 @@ const buildCustomerId = ({ email, phone }) => {
   return `cust_${hash}`;
 };
 
+const isSupabaseConfigured = () =>
+  Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+const supabaseTableUrl = () =>
+  `${process.env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/payment_orders`;
+
+const supabaseHeaders = (prefer = 'return=representation') => ({
+  apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+  'Content-Type': 'application/json',
+  Prefer: prefer
+});
+
+const toDbOrder = (order) => ({
+  order_id: order.orderId,
+  hdfc_order_ref: order.hdfcOrderRef || null,
+  customer_id: order.customerId || null,
+  customer_name: order.customerName || null,
+  customer_email: order.customerEmail || null,
+  customer_phone: order.customerPhone || null,
+  amount: order.amount ?? null,
+  currency: order.currency || 'INR',
+  status: order.status || 'PENDING',
+  transaction_id: order.transactionId || null,
+  payment_method_type: order.paymentMethodType || null,
+  verified: typeof order.verified === 'boolean' ? order.verified : false,
+  verification_source: order.verificationSource || null,
+  gateway_response: order.gatewayResponse || null,
+  gateway_status_response: order.hdfcDetails || null,
+  paid_at: order.paidAt || null,
+  created_at: order.createdAt || new Date().toISOString(),
+  updated_at: new Date().toISOString()
+});
+
+const fromDbOrder = (row) => {
+  if (!row) return null;
+
+  return {
+    orderId: row.order_id,
+    hdfcOrderRef: row.hdfc_order_ref,
+    customerId: row.customer_id,
+    customerName: row.customer_name,
+    customerEmail: row.customer_email,
+    customerPhone: row.customer_phone,
+    amount: typeof row.amount === 'number' ? row.amount : parseFloat(row.amount || 0),
+    currency: row.currency || 'INR',
+    status: row.status || 'PENDING',
+    transactionId: row.transaction_id || '',
+    paymentMethodType: row.payment_method_type || '',
+    verified: Boolean(row.verified),
+    verificationSource: row.verification_source || '',
+    gatewayResponse: row.gateway_response || null,
+    hdfcDetails: row.gateway_status_response || null,
+    paidAt: row.paid_at || null,
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null
+  };
+};
+
+const saveOrder = async (order) => {
+  ordersDB.set(order.orderId, order);
+
+  if (!isSupabaseConfigured()) {
+    console.warn(`[Supabase Save Skipped] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY for order ${order.orderId}`);
+    return order;
+  }
+
+  try {
+    const response = await axios.post(`${supabaseTableUrl()}?on_conflict=order_id`, toDbOrder(order), {
+      headers: supabaseHeaders('resolution=merge-duplicates,return=representation')
+    });
+
+    console.log(`[Supabase Save OK] Order ${order.orderId} persisted`);
+    return fromDbOrder(response.data?.[0]) || order;
+  } catch (error) {
+    console.error('[Supabase Save Order Error]:', error.response?.data || error.message);
+    return order;
+  }
+};
+
+const getStoredOrder = async (orderId) => {
+  if (ordersDB.has(orderId)) {
+    return ordersDB.get(orderId);
+  }
+
+  if (!isSupabaseConfigured()) {
+    console.warn(`[Supabase Get Skipped] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY for order ${orderId}`);
+    return null;
+  }
+
+  try {
+    const response = await axios.get(`${supabaseTableUrl()}?order_id=eq.${encodeURIComponent(orderId)}&select=*`, {
+      headers: supabaseHeaders()
+    });
+
+    const order = fromDbOrder(response.data?.[0]);
+    if (order) {
+      ordersDB.set(orderId, order);
+      console.log(`[Supabase Get OK] Order ${orderId} loaded`);
+    }
+    return order;
+  } catch (error) {
+    console.error('[Supabase Get Order Error]:', error.response?.data || error.message);
+    return null;
+  }
+};
+
 /**
  * 1. POST /api/create-payment-order
  * Creates an order session with HDFC SmartGateway (or mock fallback for local test mode)
@@ -123,7 +230,7 @@ app.post('/api/create-payment-order', async (req, res) => {
       status: 'PENDING',
       createdAt: new Date().toISOString()
     };
-    ordersDB.set(orderId, orderData);
+    await saveOrder(orderData);
 
     console.log(`[HDFC Gateway] Creating order ${orderId} for ${name} (${amount} INR)`);
 
@@ -193,6 +300,11 @@ app.post('/api/create-payment-order', async (req, res) => {
 
       console.log('[HDFC Checkout URL]:', paymentUrl);
 
+      const persistedOrder = await getStoredOrder(orderId) || orderData;
+      persistedOrder.gatewayResponse = response.data;
+      persistedOrder.hdfcOrderRef = response.data.id || persistedOrder.hdfcOrderRef;
+      await saveOrder(persistedOrder);
+
       return res.json({
         success: true,
         orderId,
@@ -235,7 +347,7 @@ app.get('/api/verify-payment', async (req, res) => {
       return res.status(400).json({ success: false, message: 'order_id parameter is required.' });
     }
 
-    let order = ordersDB.get(order_id);
+    let order = await getStoredOrder(order_id);
 
     // If mock payment action passed in query (simulate success / fail)
     if (mock_action && order) {
@@ -246,7 +358,7 @@ app.get('/api/verify-payment', async (req, res) => {
       } else if (mock_action === 'FAILURE') {
         order.status = 'FAILED';
       }
-      ordersDB.set(order_id, order);
+      await saveOrder(order);
     }
 
     if (order && !order.orderId) {
@@ -272,6 +384,8 @@ app.get('/api/verify-payment', async (req, res) => {
       order.verified = true;
       order.verificationSource = 'sandbox-demo';
       order.transactionId = order.transactionId || `UAT_${Date.now()}`;
+      order.paymentMethodType = order.paymentMethodType || 'UPI';
+      await saveOrder(order);
 
       return res.json({
         success: true,
@@ -312,10 +426,16 @@ app.get('/api/verify-payment', async (req, res) => {
           order.customerEmail = hdfcRes.data.customer_email || order.customerEmail || '';
           order.customerPhone = hdfcRes.data.customer_phone || order.customerPhone || '';
           order.transactionId = hdfcRes.data.txn_id || order.transactionId || '';
+          order.paymentMethodType =
+            hdfcRes.data.payment_method_type ||
+            hdfcRes.data.payment_method ||
+            hdfcRes.data.method ||
+            order.paymentMethodType ||
+            '';
           order.hdfcDetails = hdfcRes.data;
           order.verificationSource = 'status_api';
           order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
-          ordersDB.set(order_id, order);
+          await saveOrder(order);
           console.log(`[HDFC Status API S2S] Order ${order_id} verified as ${order.status}`);
         }
       } catch (hdfcErr) {
@@ -344,6 +464,8 @@ app.get('/api/verify-payment', async (req, res) => {
       order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
     }
 
+    await saveOrder(order);
+
     return res.json({
       success: true,
       order
@@ -359,7 +481,7 @@ app.get('/api/verify-payment', async (req, res) => {
  * 3. POST /api/payment-webhook
  * HDFC SmartGateway Webhook Endpoint to handle asynchronous transaction updates
  */
-app.post('/api/payment-webhook', (req, res) => {
+app.post('/api/payment-webhook', async (req, res) => {
   try {
     const payload = req.body;
     console.log('[HDFC Webhook Received]:', JSON.stringify(payload, null, 2));
@@ -380,12 +502,21 @@ app.post('/api/payment-webhook', (req, res) => {
     }
 
     const { order_id, status, txn_id } = payload;
-    if (order_id && ordersDB.has(order_id)) {
-      const order = ordersDB.get(order_id);
+    const order = order_id ? await getStoredOrder(order_id) : null;
+    if (order_id && order) {
       order.status = status || 'CHARGED';
       order.transactionId = txn_id || `TXN_${Date.now()}`;
+      order.paymentMethodType =
+        payload.payment_method_type ||
+        payload.payment_method ||
+        payload.method ||
+        order.paymentMethodType ||
+        '';
+      order.hdfcDetails = payload;
+      order.verified = order.status === 'CHARGED';
+      order.verificationSource = 'webhook';
       order.updatedAt = new Date().toISOString();
-      ordersDB.set(order_id, order);
+      await saveOrder(order);
       console.log(`[HDFC Webhook] Order ${order_id} updated to ${order.status}`);
     }
 

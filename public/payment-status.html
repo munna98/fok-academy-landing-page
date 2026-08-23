@@ -321,6 +321,7 @@
         try {
           const res = await fetch(`/api/verify-payment?order_id=${encodeURIComponent(orderId)}${mockAction ? `&mock_action=${mockAction}` : ''}`);
           const data = await res.json();
+          const paymentMethodLabel = data?.order?.paymentMethodType || 'HDFC Bank SmartGateway';
 
           if (data.success && data.order && data.order.verified === true) {
             // SUCCESSFUL PAYMENT SCREEN
@@ -335,7 +336,7 @@
                 <div class="receipt-row"><span>Order ID</span><strong>${data.order.orderId}</strong></div>
                 <div class="receipt-row"><span>Student Name</span><strong>${data.order.customerName || name}</strong></div>
                 <div class="receipt-row"><span>Amount Paid</span><strong>₹${data.order.amount}.00</strong></div>
-                <div class="receipt-row"><span>Payment Gateway</span><strong>HDFC Bank SmartGateway</strong></div>
+                <div class="receipt-row"><span>Payment Method</span><strong>${paymentMethodLabel}</strong></div>
                 <div class="receipt-row"><span>Status</span><strong style="color: var(--green);">PAID & VERIFIED</strong></div>
               </div>
 
