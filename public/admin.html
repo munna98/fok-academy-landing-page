@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Admin Dashboard for FOK Academy payment orders." />
+  <title>Admin Dashboard | FOK Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(231, 169, 21, 0.12), transparent 28%),
+        linear-gradient(180deg, #fffdf7 0%, #fbfaf7 50%, #f4f1e8 100%);
+      color: var(--ink);
+    }
+
+    .admin-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-header {
+      background: rgba(251, 250, 247, 0.96);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(25, 50, 76, 0.08);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .admin-header-container {
+      width: min(1280px, calc(100% - 40px));
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .admin-brand img {
+      height: 48px;
+      width: auto;
+    }
+
+    .admin-brand strong {
+      display: block;
+      font-family: "Manrope", sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .admin-brand span {
+      display: block;
+      margin-top: 3px;
+      font-family: "Manrope", sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .admin-user-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .admin-user-info {
+      font-size: 13px;
+      color: #5f6f81;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .admin-user-info strong {
+      color: var(--navy);
+    }
+
+    .btn-logout {
+      background: rgba(239, 68, 68, 0.08);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .admin-main {
+      width: min(1280px, calc(100% - 40px));
+      margin: 36px auto 60px;
+      flex: 1;
+    }
+
+    .dashboard-title-area {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .dashboard-title-area h1 {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.03em;
+    }
+
+    .dashboard-title-area p {
+      margin: 4px 0 0;
+      font-size: 14px;
+      color: #5f6f81;
+    }
+
+    /* Summary Metric Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .metric-card {
+      background: white;
+      border: 1px solid rgba(25, 50, 76, 0.08);
+      border-radius: 20px;
+      padding: 22px 24px;
+      box-shadow: 0 10px 30px rgba(14, 33, 53, 0.04);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 36px rgba(14, 33, 53, 0.08);
+    }
+
+    .metric-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .metric-icon.gold {
+      background: var(--gold-light);
+      color: var(--gold-dark);
+      border: 1px solid rgba(231, 169, 21, 0.3);
+    }
+
+    .metric-icon.green {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .metric-icon.navy {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .metric-icon.amber {
+      background: #fffbe6;
+      color: #d97706;
+      border: 1px solid rgba(217, 119, 6, 0.25);
+    }
+
+    .metric-details small {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .metric-details strong {
+      display: block;
+      font-family: "Manrope", sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.1;
+    }
+
+    /* Controls & Table Shell */
+    .table-container-card {
+      background: white;
+      border: 1px solid rgba(25, 50, 76, 0.09);
+      border-radius: 24px;
+      box-shadow: 0 16px 50px rgba(14, 33, 53, 0.06);
+      overflow: hidden;
+    }
+
+    .table-toolbar {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(25, 50, 76, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: #fafafa;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 260px;
+      max-width: 420px;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      border: 1px solid rgba(25, 50, 76, 0.14);
+      border-radius: 12px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(231, 169, 21, 0.14);
+    }
+
+    .filter-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .select-filter {
+      padding: 10px 14px;
+      border: 1px solid rgba(25, 50, 76, 0.14);
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      background: white;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .btn-refresh {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--navy);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-refresh:hover {
+      background: var(--navy-2);
+    }
+
+    /* Table Styles */
+    .orders-table-wrap {
+      overflow-x: auto;
+    }
+
+    table.orders-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    table.orders-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+      padding: 14px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    table.orders-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      color: var(--ink);
+      vertical-align: middle;
+    }
+
+    table.orders-table tr:hover td {
+      background: #fdfbf7;
+    }
+
+    .order-id-code {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--navy);
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-copy-id {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+    }
+
+    .btn-copy-id:hover {
+      color: var(--navy);
+    }
+
+    .customer-info strong {
+      display: block;
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    .customer-info span {
+      display: block;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-status.charged {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid rgba(22, 163, 74, 0.2);
+    }
+
+    .badge-status.pending {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid rgba(217, 119, 6, 0.25);
+    }
+
+    .badge-status.failed {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    .source-tag {
+      font-size: 11px;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+    }
+
+    .empty-state i {
+      font-size: 40px;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+    }
+
+    .empty-state h3 {
+      margin: 0 0 6px;
+      color: var(--navy);
+      font-size: 18px;
+    }
+
+    .empty-state p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-shell">
+    <header class="admin-header">
+      <div class="admin-header-container">
+        <div class="admin-brand">
+          <img src="assets/fok-logo.png" alt="FOK Academy Logo" />
+          <div>
+            <strong>FOK</strong>
+            <span>ACADEMY</span>
+          </div>
+        </div>
+
+        <div class="admin-user-bar">
+          <div class="admin-user-info">
+            <i class="fa-solid fa-user-shield text-gold"></i>
+            <span id="adminUserEmail">Admin</span>
+          </div>
+          <button id="btnLogout" class="btn-logout">
+            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <div class="dashboard-title-area">
+        <div>
+          <h1>Payment Orders Dashboard</h1>
+          <p>Real-time customer transactions and HDFC SmartGateway order status.</p>
+        </div>
+      </div>
+
+      <!-- Metric Summary Cards -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon gold">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+          </div>
+          <div class="metric-details">
+            <small>Total Revenue</small>
+            <strong id="statRevenue">₹0</strong>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon green">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="metric-details">
+            <small>Paid Orders</small>
+            <strong id="statPaidCount">0</strong>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon amber">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+          <div class="metric-details">
+            <small>Pending Orders</small>
+            <strong id="statPendingCount">0</strong>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon navy">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div class="metric-details">
+            <small>Total Orders</small>
+            <strong id="statTotalCount">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Container Card -->
+      <div class="table-container-card">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Search by name, email, phone, or Order ID..." />
+          </div>
+
+          <div class="filter-actions">
+            <select id="statusFilter" class="select-filter">
+              <option value="ALL">All Statuses</option>
+              <option value="CHARGED">CHARGED (Paid)</option>
+              <option value="PENDING">PENDING</option>
+              <option value="FAILED">FAILED</option>
+            </select>
+
+            <button id="btnRefresh" class="btn-refresh">
+              <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="orders-table-wrap">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Date & Time</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Verification</th>
+                <th>Transaction ID</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTbody">
+              <tr>
+                <td colspan="7">
+                  <div class="empty-state">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <h3>Loading orders...</h3>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let rawOrders = [];
+
+    async function checkAuthAndFetch() {
+      try {
+        const meRes = await fetch('/api/admin/me', { credentials: 'include' });
+        if (!meRes.ok) {
+          window.location.replace('/admin-login.html');
+          return;
+        }
+
+        const meData = await meRes.json();
+        if (meData.user?.email) {
+          document.getElementById('adminUserEmail').textContent = meData.user.email;
+        }
+
+        await loadOrders();
+      } catch (err) {
+        console.error('Auth error:', err);
+        window.location.replace('/admin-login.html');
+      }
+    }
+
+    async function loadOrders() {
+      const refreshBtn = document.getElementById('btnRefresh');
+      const refreshIcon = document.getElementById('refreshIcon');
+      refreshIcon.className = 'fa-solid fa-spinner fa-spin';
+      refreshBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/admin/orders?limit=200', { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to load orders');
+
+        const data = await res.json();
+        rawOrders = data.orders || [];
+        updateMetrics(rawOrders);
+        renderOrders();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('ordersTbody').innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-triangle-exclamation text-red"></i>
+                <h3>Unable to load orders</h3>
+                <p>${err.message || 'Please check your connection and refresh.'}</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      } finally {
+        refreshIcon.className = 'fa-solid fa-rotate-right';
+        refreshBtn.disabled = false;
+      }
+    }
+
+    function updateMetrics(orders) {
+      const totalCount = orders.length;
+      let paidCount = 0;
+      let pendingCount = 0;
+      let totalRevenue = 0;
+
+      orders.forEach(o => {
+        if (o.status === 'CHARGED' || o.status === 'SUCCESS' || o.verified) {
+          paidCount++;
+          totalRevenue += parseFloat(o.amount || 0);
+        } else if (o.status === 'PENDING') {
+          pendingCount++;
+        }
+      });
+
+      document.getElementById('statTotalCount').textContent = totalCount;
+      document.getElementById('statPaidCount').textContent = paidCount;
+      document.getElementById('statPendingCount').textContent = pendingCount;
+      document.getElementById('statRevenue').textContent = '₹' + totalRevenue.toLocaleString('en-IN');
+    }
+
+    function renderOrders() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const selectedStatus = document.getElementById('statusFilter').value;
+
+      const filtered = rawOrders.filter(o => {
+        const matchesQuery = !query || 
+          (o.order_id && o.order_id.toLowerCase().includes(query)) ||
+          (o.customer_name && o.customer_name.toLowerCase().includes(query)) ||
+          (o.customer_email && o.customer_email.toLowerCase().includes(query)) ||
+          (o.customer_phone && o.customer_phone.toLowerCase().includes(query)) ||
+          (o.transaction_id && o.transaction_id.toLowerCase().includes(query));
+
+        let matchesStatus = true;
+        if (selectedStatus === 'CHARGED') {
+          matchesStatus = o.status === 'CHARGED' || o.status === 'SUCCESS' || o.verified;
+        } else if (selectedStatus === 'PENDING') {
+          matchesStatus = o.status === 'PENDING' && !o.verified;
+        } else if (selectedStatus === 'FAILED') {
+          matchesStatus = o.status === 'FAILED';
+        }
+
+        return matchesQuery && matchesStatus;
+      });
+
+      const tbody = document.getElementById('ordersTbody');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-folder-open"></i>
+                <h3>No matching orders found</h3>
+                <p>Try adjusting your search query or status filter.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(o => {
+        const isPaid = o.status === 'CHARGED' || o.status === 'SUCCESS' || o.verified;
+        const statusClass = isPaid ? 'charged' : (o.status === 'FAILED' ? 'failed' : 'pending');
+        const statusLabel = isPaid ? 'PAID' : (o.status || 'PENDING');
+
+        const dateStr = o.created_at ? new Date(o.created_at).toLocaleString('en-IN', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', hour12: true
+        }) : 'N/A';
+
+        return `
+          <tr>
+            <td>
+              <span class="order-id-code">
+                ${escapeHtml(o.order_id || 'N/A')}
+                <button class="btn-copy-id" title="Copy Order ID" onclick="copyText('${escapeHtml(o.order_id)}')">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+              </span>
+            </td>
+            <td>${dateStr}</td>
+            <td>
+              <div class="customer-info">
+                <strong>${escapeHtml(o.customer_name || 'Guest User')}</strong>
+                <span>${escapeHtml(o.customer_email || '')} ${o.customer_phone ? '• ' + escapeHtml(o.customer_phone) : ''}</span>
+              </div>
+            </td>
+            <td><strong>₹${parseFloat(o.amount || 0).toLocaleString('en-IN')}</strong></td>
+            <td><span class="badge-status ${statusClass}"><i class="fa-solid fa-circle"></i> ${statusLabel}</span></td>
+            <td><span class="source-tag">${escapeHtml(o.verification_source || 'direct')}</span></td>
+            <td><span class="order-id-code" style="font-size:11px;">${escapeHtml(o.transaction_id || 'Pending')}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function copyText(text) {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied Order ID: ' + text);
+      }).catch(err => console.error(err));
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderOrders);
+    document.getElementById('statusFilter').addEventListener('change', renderOrders);
+    document.getElementById('btnRefresh').addEventListener('click', loadOrders);
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      try {
+        await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+      } catch (err) {
+        console.error(err);
+      }
+      window.location.replace('/admin-login.html');
+    });
+
+    checkAuthAndFetch();
+  </script>
+</body>
+</html>

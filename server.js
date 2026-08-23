@@ -76,8 +76,14 @@ const buildCustomerId = ({ email, phone }) => {
 const isSupabaseConfigured = () =>
   Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+const isSupabaseAuthConfigured = () =>
+  Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+
 const supabaseTableUrl = () =>
   `${process.env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/payment_orders`;
+
+const supabaseAuthUrl = (path) =>
+  `${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1${path}`;
 
 const supabaseHeaders = (prefer = 'return=representation') => ({
   apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -85,6 +91,67 @@ const supabaseHeaders = (prefer = 'return=representation') => ({
   'Content-Type': 'application/json',
   Prefer: prefer
 });
+
+const supabaseAuthHeaders = () => ({
+  apikey: process.env.SUPABASE_ANON_KEY,
+  'Content-Type': 'application/json'
+});
+
+const parseCookies = (cookieHeader = '') =>
+  cookieHeader
+    .split(';')
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .reduce((acc, chunk) => {
+      const separatorIndex = chunk.indexOf('=');
+      if (separatorIndex === -1) return acc;
+      const key = chunk.slice(0, separatorIndex).trim();
+      const value = chunk.slice(separatorIndex + 1).trim();
+      acc[key] = decodeURIComponent(value);
+      return acc;
+    }, {});
+
+const getAdminTokenFromRequest = (req) =>
+  parseCookies(req.headers.cookie || '').fok_admin_token || '';
+
+const setAdminCookie = (res, accessToken) => {
+  const parts = [
+    `fok_admin_token=${encodeURIComponent(accessToken)}`,
+    'HttpOnly',
+    'Path=/',
+    'SameSite=Lax',
+    'Max-Age=28800',
+    'Secure'
+  ];
+
+  res.setHeader('Set-Cookie', parts.join('; '));
+};
+
+const clearAdminCookie = (res) => {
+  res.setHeader('Set-Cookie', 'fok_admin_token=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0; Secure');
+};
+
+const getAdminUserFromRequest = async (req) => {
+  if (!isSupabaseAuthConfigured()) return null;
+
+  const accessToken = getAdminTokenFromRequest(req);
+  if (!accessToken) return null;
+
+  try {
+    const response = await axios.get(supabaseAuthUrl('/user'), {
+      headers: {
+        ...supabaseAuthHeaders(),
+        Authorization: `Bearer ${accessToken}`
+      },
+      timeout: 8000
+    });
+
+    return response.data || null;
+  } catch (error) {
+    console.warn('[Supabase Admin Auth Warning]:', error.response?.data || error.message);
+    return null;
+  }
+};
 
 const toDbOrder = (order) => ({
   order_id: order.orderId,
@@ -529,6 +596,107 @@ app.post('/api/payment-webhook', async (req, res) => {
   }
 });
 
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    if (!isSupabaseAuthConfigured()) {
+      return res.status(500).json({ success: false, message: 'Supabase Auth is not configured.' });
+    }
+
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
+
+    const response = await axios.post(
+      `${supabaseAuthUrl('/token')}?grant_type=password`,
+      { email, password },
+      {
+        headers: supabaseAuthHeaders(),
+        timeout: 10000
+      }
+    );
+
+    if (!response.data?.access_token || !response.data?.user) {
+      return res.status(401).json({ success: false, message: 'Invalid admin login.' });
+    }
+
+    setAdminCookie(res, response.data.access_token);
+
+    return res.json({
+      success: true,
+      user: {
+        id: response.data.user.id,
+        email: response.data.user.email
+      }
+    });
+  } catch (error) {
+    console.error('[Admin Login Error]:', error.response?.data || error.message);
+    return res.status(401).json({
+      success: false,
+      message: error.response?.data?.msg || error.response?.data?.message || 'Unable to sign in.'
+    });
+  }
+});
+
+app.get('/api/admin/me', async (req, res) => {
+  const user = await getAdminUserFromRequest(req);
+
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
+  return res.json({
+    success: true,
+    user: {
+      id: user.id,
+      email: user.email
+    }
+  });
+});
+
+app.post('/api/admin/logout', async (req, res) => {
+  clearAdminCookie(res);
+  return res.json({ success: true });
+});
+
+app.get('/api/admin/orders', async (req, res) => {
+  try {
+    const user = await getAdminUserFromRequest(req);
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!isSupabaseConfigured()) {
+      return res.status(500).json({ success: false, message: 'Supabase storage is not configured.' });
+    }
+
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 250);
+    const response = await axios.get(
+      `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
+      {
+        headers: supabaseHeaders(),
+        timeout: 10000
+      }
+    );
+
+    return res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email
+      },
+      orders: response.data || []
+    });
+  } catch (error) {
+    console.error('[Admin Orders Error]:', error.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to load admin orders.'
+    });
+  }
+});
+
 // Accept HDFC/Juspay browser returns, then redirect to the user-facing status page.
 app.all('/api/payment-return', (req, res) => {
   const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
@@ -550,6 +718,14 @@ app.all('/payment-status.html', (req, res) => {
     }
   }
   res.sendFile(path.join(__dirname, 'public', 'payment-status.html'));
+});
+
+app.get('/admin-login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Fallback route to serve main landing page

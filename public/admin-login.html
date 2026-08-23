@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Admin login for FOK Academy payment dashboard." />
+  <title>Admin Login | FOK Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(231, 169, 21, 0.22), transparent 28%),
+        linear-gradient(180deg, #fffdf7 0%, #fbfaf7 50%, #f4f1e8 100%);
+      color: var(--ink);
+    }
+
+    .admin-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-header {
+      background: rgba(251, 250, 247, 0.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(25, 50, 76, 0.08);
+      padding: 16px 0;
+    }
+
+    .admin-header .container,
+    .admin-login-wrap {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .admin-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .admin-brand img {
+      height: 52px;
+      width: auto;
+    }
+
+    .admin-brand strong {
+      display: block;
+      font-family: "Manrope", sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .admin-brand span {
+      display: block;
+      margin-top: 3px;
+      font-family: "Manrope", sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .admin-login-wrap {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 56px 0 72px;
+    }
+
+    .admin-login-card {
+      width: min(480px, 100%);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(231, 169, 21, 0.24);
+      border-radius: 30px;
+      box-shadow: 0 24px 70px rgba(14, 33, 53, 0.12);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .admin-login-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--gold), #ffd56a);
+    }
+
+    .admin-login-body {
+      padding: 38px 34px 34px;
+    }
+
+    .admin-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dark);
+      background: var(--gold-light);
+      border: 1px solid rgba(231, 169, 21, 0.3);
+      border-radius: 999px;
+      padding: 6px 12px;
+      margin-bottom: 14px;
+    }
+
+    .admin-login-body h1 {
+      margin: 0 0 10px;
+      font-family: "Manrope", sans-serif;
+      font-size: 34px;
+      line-height: 1.05;
+      color: var(--navy);
+      letter-spacing: -0.04em;
+    }
+
+    .admin-login-body p {
+      margin: 0 0 24px;
+      color: #5f6f81;
+      font-size: 15px;
+    }
+
+    .admin-form {
+      display: grid;
+      gap: 16px;
+    }
+
+    .admin-form label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 7px;
+    }
+
+    .admin-form input {
+      width: 100%;
+      border: 1px solid rgba(25, 50, 76, 0.12);
+      border-radius: 16px;
+      background: white;
+      color: var(--ink);
+      padding: 15px 16px;
+      font: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .admin-form input:focus {
+      border-color: rgba(231, 169, 21, 0.75);
+      box-shadow: 0 0 0 4px rgba(231, 169, 21, 0.14);
+    }
+
+    .admin-error {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      background: #fff2f2;
+      color: #b42318;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .admin-submit {
+      border: none;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-shell">
+    <header class="admin-header">
+      <div class="container">
+        <div class="admin-brand">
+          <img src="assets/fok-logo.png" alt="FOK Academy Logo" />
+          <div>
+            <strong>FOK</strong>
+            <span>ACADEMY</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-login-wrap">
+      <section class="admin-login-card">
+        <div class="admin-login-body">
+          <div class="admin-kicker">
+            <i class="fa-solid fa-shield-halved"></i>
+            Admin Access
+          </div>
+          <h1>Sign in to the orders dashboard.</h1>
+          <p>Use your Supabase admin email and password to review payment activity securely.</p>
+
+          <form id="adminLoginForm" class="admin-form">
+            <div>
+              <label for="adminEmail">Email</label>
+              <input id="adminEmail" name="email" type="email" autocomplete="email" required />
+            </div>
+            <div>
+              <label for="adminPassword">Password</label>
+              <input id="adminPassword" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <div id="adminError" class="admin-error"></div>
+            <button id="adminSubmit" type="submit" class="btn btn-gold btn-large admin-submit">Open Admin Dashboard →</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (async function checkSession() {
+      try {
+        const res = await fetch('/api/admin/me', { credentials: 'include' });
+        if (res.ok) {
+          window.location.replace('/admin.html');
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    })();
+
+    const form = document.getElementById('adminLoginForm');
+    const errorBox = document.getElementById('adminError');
+    const submitBtn = document.getElementById('adminSubmit');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorBox.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in...';
+
+      const email = document.getElementById('adminEmail').value.trim();
+      const password = document.getElementById('adminPassword').value;
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Unable to sign in.');
+        }
+
+        window.location.replace('/admin.html');
+      } catch (error) {
+        errorBox.textContent = error.message || 'Unable to sign in.';
+        errorBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Open Admin Dashboard →';
+      }
+    });
+  </script>
+</body>
+</html>
