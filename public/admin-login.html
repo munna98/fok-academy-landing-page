@@ -198,10 +198,9 @@
         <div class="admin-login-body">
           <div class="admin-kicker">
             <i class="fa-solid fa-shield-halved"></i>
-            Admin Access
+            Admin Panel
           </div>
-          <h1>Sign in to the orders dashboard.</h1>
-          <p>Use your Supabase admin email and password to review payment activity securely.</p>
+          <h1>Sign in</h1>
 
           <form id="adminLoginForm" class="admin-form">
             <div>
@@ -213,7 +212,7 @@
               <input id="adminPassword" name="password" type="password" autocomplete="current-password" required />
             </div>
             <div id="adminError" class="admin-error"></div>
-            <button id="adminSubmit" type="submit" class="btn btn-gold btn-large admin-submit">Open Admin Dashboard →</button>
+            <button id="adminSubmit" type="submit" class="btn btn-gold btn-large admin-submit">Sign in →</button>
           </form>
         </div>
       </section>
@@ -263,7 +262,7 @@
         errorBox.textContent = error.message || 'Unable to sign in.';
         errorBox.style.display = 'block';
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Open Admin Dashboard →';
+        submitBtn.textContent = 'Sign in →';
       }
     });
   </script>
