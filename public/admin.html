@@ -585,12 +585,12 @@
               </div>
 
               <select id="dateFilter" class="select-filter">
-                <option value="ALL">All Dates</option>
-                <option value="TODAY">Today</option>
+                <option value="TODAY" selected>Today</option>
                 <option value="YESTERDAY">Yesterday</option>
                 <option value="THIS_MONTH">This Month</option>
                 <option value="PREV_MONTH">Previous Month</option>
                 <option value="THIS_FY">This FY</option>
+                <option value="ALL">All Dates</option>
                 <option value="CUSTOM" hidden>Custom Range</option>
               </select>
             </div>
@@ -936,6 +936,9 @@
       }
       window.location.replace('/admin-login.html');
     });
+
+    // Initialize default date preset (Today)
+    syncDateInputsFromPreset('TODAY');
 
     checkAuthAndFetch();
   </script>
