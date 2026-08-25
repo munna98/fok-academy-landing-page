@@ -418,11 +418,37 @@ app.post('/api/create-payment-order', async (req, res) => {
 
 /**
  * 2. GET /api/verify-payment
+    } else {
+      throw new Error(response.data?.error_message || 'Invalid session response structure from HDFC SmartGateway');
+    }
+
+  } catch (error) {
+    const errorDetails = error.response?.data || error.message;
+    console.error('[HDFC Gateway Session Error]:', JSON.stringify(errorDetails));
+
+    const errorMessage = error.response?.data?.error_message 
+      || error.response?.data?.message 
+      || (typeof error.response?.data === 'string' ? error.response.data : null)
+      || error.message 
+      || 'Payment session creation failed.';
+
+    return res.status(500).json({
+      success: false,
+      message: errorMessage,
+      error: errorDetails
+    });
+  }
+});
+
+/**
+ * 2. GET /api/verify-payment
  * Verifies order status by checking internal DB or calling HDFC SmartGateway Status API S2S
  */
 app.get('/api/verify-payment', async (req, res) => {
   try {
     const { order_id, mock_action } = req.query;
+
+    console.log(`[ORDER STATUS API REQUEST] order_id: ${order_id}, mock_action: ${mock_action || 'none'}`);
 
     if (!order_id) {
       return res.status(400).json({ success: false, message: 'order_id parameter is required.' });
@@ -468,10 +494,13 @@ app.get('/api/verify-payment', async (req, res) => {
       order.paymentMethodType = order.paymentMethodType || 'UPI';
       await saveOrder(order);
 
-      return res.json({
+      const responsePayload = {
         success: true,
         order
-      });
+      };
+      console.log('[ORDER STATUS API RESPONSE]:', JSON.stringify(responsePayload, null, 2));
+
+      return res.json(responsePayload);
     }
 
     if ((!order || !order.status || order.status === 'PENDING') && (!config.merchantId.includes('TEST') || config.isSandbox)) {
@@ -480,6 +509,8 @@ app.get('/api/verify-payment', async (req, res) => {
         const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
         const authHeader = rawApiKey.startsWith('Basic ') ? rawApiKey : `Basic ${base64ApiKey}`;
         const customerId = order?.customerId || `cust${(order?.customerPhone || '').replace(/\D/g, '')}`;
+
+        console.log(`[HDFC Gateway Status Request] Fetching status from: ${config.baseUrl}/orders/${order_id}`);
 
         const hdfcRes = await axios.get(`${config.baseUrl}/orders/${order_id}`, {
           headers: {
@@ -490,6 +521,8 @@ app.get('/api/verify-payment', async (req, res) => {
           },
           timeout: 7000
         });
+
+        console.log('[HDFC Gateway Status API Raw Response & Format]:', JSON.stringify(hdfcRes.data, null, 2));
 
         if (hdfcRes.data && hdfcRes.data.status) {
           console.log('[HDFC Order Status Response]:', JSON.stringify(hdfcRes.data, null, 2));
@@ -547,10 +580,13 @@ app.get('/api/verify-payment', async (req, res) => {
 
     await saveOrder(order);
 
-    return res.json({
+    const responsePayload = {
       success: true,
       order
-    });
+    };
+    console.log('[ORDER STATUS API RESPONSE]:', JSON.stringify(responsePayload, null, 2));
+
+    return res.json(responsePayload);
 
   } catch (error) {
     console.error('[Verify Payment Error]:', error.message);
