@@ -80,6 +80,46 @@ const btnText = paySubmitBtn?.querySelector('.btn-text');
 const btnSpinner = paySubmitBtn?.querySelector('.btn-spinner');
 const formAlert = document.getElementById('formAlert');
 
+// Sync Amount Selector Radios & URL Params
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramAmount = urlParams.get('amount');
+  const amountRadios = document.querySelectorAll('input[name="selected_amount"]');
+
+  if (paramAmount && ['499', '899', '999'].includes(paramAmount)) {
+    const targetRadio = document.querySelector(`input[name="selected_amount"][value="${paramAmount}"]`);
+    if (targetRadio) targetRadio.checked = true;
+  }
+
+  function updateAmountCardStyles() {
+    amountRadios.forEach((radio) => {
+      const card = radio.closest('.amount-card');
+      if (!card) return;
+      if (radio.checked) {
+        card.style.border = '2px solid var(--gold)';
+        card.style.background = '#fffdf7';
+      } else {
+        card.style.border = '1px solid var(--line)';
+        card.style.background = 'white';
+      }
+    });
+
+    const checkedRadio = document.querySelector('input[name="selected_amount"]:checked');
+    const selectedVal = checkedRadio ? checkedRadio.value : '499';
+    const paySubmitBtn = document.getElementById('paySubmitBtn');
+    const btnText = paySubmitBtn?.querySelector('.btn-text');
+    if (btnText) {
+      btnText.textContent = `Proceed to HDFC SmartGateway (₹${selectedVal}) →`;
+    }
+  }
+
+  amountRadios.forEach((radio) => {
+    radio.addEventListener('change', updateAmountCardStyles);
+  });
+
+  updateAmountCardStyles();
+});
+
 if (checkoutForm) {
   checkoutForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -130,6 +170,9 @@ if (checkoutForm) {
     if (btnSpinner) btnSpinner.style.display = 'inline-block';
     if (paySubmitBtn) paySubmitBtn.disabled = true;
 
+    const selectedRadio = document.querySelector('input[name="selected_amount"]:checked');
+    const selectedAmount = selectedRadio ? parseFloat(selectedRadio.value) : 499;
+
     try {
       const response = await fetch('/api/create-payment-order', {
         method: 'POST',
@@ -138,6 +181,7 @@ if (checkoutForm) {
           name: nameVal,
           email: emailVal,
           phone: `${countryCodeVal}${phoneVal}`,
+          amount: selectedAmount,
           isExpired: isOfferExpired
         })
       });

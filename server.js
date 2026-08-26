@@ -279,10 +279,13 @@ app.post('/api/create-payment-order', async (req, res) => {
     // Extract all numeric digits from phone number (supports international and variable length numbers)
     const cleanPhone = phone.replace(/\D/g, '') || '9999999999';
 
-    // Determine amount (enforced server-side)
+    // Determine amount (enforced server-side, supports user selected amount or env test price)
+    const reqAmount = parseFloat(req.body.amount);
     let amount;
     if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE)) && parseFloat(process.env.TEST_PRICE) > 0) {
       amount = parseFloat(process.env.TEST_PRICE);
+    } else if (!isNaN(reqAmount) && reqAmount > 0) {
+      amount = reqAmount;
     } else {
       const offerPrice = parseFloat(process.env.OFFER_PRICE || '499');
       const regularPrice = parseFloat(process.env.REGULAR_PRICE || '899');
@@ -456,14 +459,31 @@ app.get('/api/verify-payment', async (req, res) => {
 
     let order = await getStoredOrder(order_id);
 
-    // If mock payment action passed in query (simulate success / fail)
-    if (mock_action && order) {
-      if (mock_action === 'SUCCESS') {
+    // Handle explicit mock action triggers for local & demo testing
+    if (mock_action) {
+      if (!order) {
+        order = {
+          orderId: order_id,
+          amount: parseFloat(process.env.TEST_PRICE || process.env.OFFER_PRICE || '499'),
+          currency: 'INR',
+          customerName: 'Student'
+        };
+      }
+      const upperAction = String(mock_action).toUpperCase();
+      if (upperAction === 'SUCCESS' || upperAction === 'CHARGED') {
         order.status = 'CHARGED';
-        order.transactionId = `TXN_HDFC_${Date.now()}`;
+        order.verified = true;
+        order.transactionId = order.transactionId || `TXN_HDFC_${Date.now()}`;
         order.paidAt = new Date().toISOString();
-      } else if (mock_action === 'FAILURE') {
+        order.verificationSource = 'mock_success';
+      } else if (upperAction === 'FAILURE' || upperAction === 'FAILED') {
         order.status = 'FAILED';
+        order.verified = false;
+        order.verificationSource = 'mock_failure';
+      } else if (['CANCELLED', 'CANCEL', 'USER_DROPPED', 'ABORTED'].includes(upperAction)) {
+        order.status = 'CANCELLED';
+        order.verified = false;
+        order.verificationSource = 'mock_cancelled';
       }
       await saveOrder(order);
     }
@@ -472,38 +492,10 @@ app.get('/api/verify-payment', async (req, res) => {
       order.orderId = order_id;
     }
 
-    // If real API credentials are configured, fetch live status from HDFC SmartGateway S2S API
     const config = getHdfcConfig();
-    const isMockMode = config.isSandbox || config.merchantId.includes('TEST') || config.apiKey.includes('test_api_key');
 
-    if (config.isSandbox && !mock_action) {
-      if (!order) {
-        order = {
-          orderId: order_id,
-          amount: parseFloat(process.env.TEST_PRICE || process.env.OFFER_PRICE || '499'),
-          currency: 'INR',
-          customerName: 'Student',
-          status: 'CHARGED'
-        };
-      }
-
-      order.status = 'CHARGED';
-      order.verified = true;
-      order.verificationSource = 'sandbox-demo';
-      order.transactionId = order.transactionId || `UAT_${Date.now()}`;
-      order.paymentMethodType = order.paymentMethodType || 'UPI';
-      await saveOrder(order);
-
-      const responsePayload = {
-        success: true,
-        order
-      };
-      console.log('[ORDER STATUS API RESPONSE]:', JSON.stringify(responsePayload, null, 2));
-
-      return res.json(responsePayload);
-    }
-
-    if ((!order || !order.status || order.status === 'PENDING') && (!config.merchantId.includes('TEST') || config.isSandbox)) {
+    // Query HDFC SmartGateway S2S API if real API credentials/UAT merchant ID are present
+    if (!mock_action && config.merchantId && !config.merchantId.includes('FOK_MERCHANT_TEST')) {
       try {
         const rawApiKey = (config.apiKey || '').trim();
         const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
@@ -522,18 +514,15 @@ app.get('/api/verify-payment', async (req, res) => {
           timeout: 7000
         });
 
-        console.log('[HDFC Gateway Status API Raw Response & Format]:', JSON.stringify(hdfcRes.data, null, 2));
+        console.log('[HDFC Gateway Status API Raw Response]:', JSON.stringify(hdfcRes.data, null, 2));
 
         if (hdfcRes.data && hdfcRes.data.status) {
-          console.log('[HDFC Order Status Response]:', JSON.stringify(hdfcRes.data, null, 2));
-
           if (!order) {
-            order = {
-              orderId: hdfcRes.data.order_id || order_id
-            };
+            order = { orderId: hdfcRes.data.order_id || order_id };
           }
 
-          order.status = hdfcRes.data.status;
+          const hdfcStatus = String(hdfcRes.data.status).toUpperCase();
+          order.status = hdfcStatus;
           order.amount = parseFloat(hdfcRes.data.amount || order.amount || 0);
           order.currency = hdfcRes.data.currency || order.currency || 'INR';
           order.customerName = hdfcRes.data.customer_name || order.customerName || '';
@@ -548,9 +537,11 @@ app.get('/api/verify-payment', async (req, res) => {
             '';
           order.hdfcDetails = hdfcRes.data;
           order.verificationSource = 'status_api';
-          order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
+
+          // Strictly set verified flag ONLY if status is CHARGED or SUCCESS
+          order.verified = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(hdfcStatus) && Boolean(order.transactionId);
           await saveOrder(order);
-          console.log(`[HDFC Status API S2S] Order ${order_id} verified as ${order.status}`);
+          console.log(`[HDFC Status API S2S] Order ${order_id} verified status: ${order.status}, verified: ${order.verified}`);
         }
       } catch (hdfcErr) {
         console.warn('[HDFC Status Check Notice]:', hdfcErr.response?.data || hdfcErr.message);
@@ -567,17 +558,8 @@ app.get('/api/verify-payment', async (req, res) => {
       };
     }
 
-    if (mock_action === 'SUCCESS') {
-      order.verified = true;
-      order.verificationSource = 'mock';
-    } else if (config.isSandbox) {
-      // Allow demo success screens in UAT even though no real money moves there.
-      order.verified = order.status === 'CHARGED';
-      order.verificationSource = 'sandbox-demo';
-    } else if (typeof order.verified !== 'boolean') {
-      order.verified = Boolean(order.transactionId) && order.status === 'CHARGED';
-    }
-
+    // Ensure verified flag strictly matches CHARGED or SUCCESS status
+    order.verified = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(String(order.status).toUpperCase()) && Boolean(order.verified !== false);
     await saveOrder(order);
 
     const responsePayload = {
@@ -748,11 +730,36 @@ app.get('/api/admin/orders', async (req, res) => {
 });
 
 // Accept HDFC/Juspay browser returns, then redirect to the user-facing status page.
-app.all('/api/payment-return', (req, res) => {
-  const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
+app.all('/api/payment-return', async (req, res) => {
+  const body = req.body || {};
+  const query = req.query || {};
+  const orderId = body.order_id || body.orderId || query.order_id || query.orderId;
+  const rawStatus = body.status || body.order_status || body.txn_status || body.status_id || query.status || query.order_status || query.txn_status || query.status_id;
+  const txnId = body.txn_id || body.transaction_id || query.txn_id || query.transaction_id;
 
   if (orderId) {
-    return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}`);
+    let order = await getStoredOrder(orderId);
+    if (order && rawStatus) {
+      const normStatus = String(rawStatus).toUpperCase();
+      if (['CHARGED', 'SUCCESS', 'COMPLETED'].includes(normStatus)) {
+        order.status = 'CHARGED';
+        order.verified = true;
+      } else if (['CANCELLED', 'USER_DROPPED', 'ABORTED', 'CANCEL', 'EXPIRED'].includes(normStatus)) {
+        order.status = 'CANCELLED';
+        order.verified = false;
+      } else if (['FAILED', 'DECLINED', 'REJECTED', 'AUTHENTICATION_FAILED', 'FAILURE'].includes(normStatus)) {
+        order.status = 'FAILED';
+        order.verified = false;
+      } else {
+        order.status = normStatus;
+        order.verified = false;
+      }
+      if (txnId) order.transactionId = txnId;
+      await saveOrder(order);
+    }
+
+    const statusParam = rawStatus ? `&status=${encodeURIComponent(rawStatus)}` : '';
+    return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}${statusParam}`);
   }
 
   return res.redirect('/payment-status.html');
@@ -760,11 +767,31 @@ app.all('/api/payment-return', (req, res) => {
 
 // Handle direct HTTP POST and GET redirects to payment-status.html from HDFC SmartGateway
 // for backward compatibility with older RETURN_URL values.
-app.all('/payment-status.html', (req, res) => {
+app.all('/payment-status.html', async (req, res) => {
   if (req.method === 'POST') {
-    const orderId = req.body?.order_id || req.body?.orderId || req.query?.order_id || req.query?.orderId;
+    const body = req.body || {};
+    const query = req.query || {};
+    const orderId = body.order_id || body.orderId || query.order_id || query.orderId;
+    const rawStatus = body.status || body.order_status || body.txn_status || body.status_id || query.status || query.order_status || query.txn_status || query.status_id;
+
     if (orderId) {
-      return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}`);
+      let order = await getStoredOrder(orderId);
+      if (order && rawStatus) {
+        const normStatus = String(rawStatus).toUpperCase();
+        if (['CHARGED', 'SUCCESS', 'COMPLETED'].includes(normStatus)) {
+          order.status = 'CHARGED';
+          order.verified = true;
+        } else if (['CANCELLED', 'USER_DROPPED', 'ABORTED', 'CANCEL', 'EXPIRED'].includes(normStatus)) {
+          order.status = 'CANCELLED';
+          order.verified = false;
+        } else if (['FAILED', 'DECLINED', 'REJECTED', 'AUTHENTICATION_FAILED', 'FAILURE'].includes(normStatus)) {
+          order.status = 'FAILED';
+          order.verified = false;
+        }
+        await saveOrder(order);
+      }
+      const statusParam = rawStatus ? `&status=${encodeURIComponent(rawStatus)}` : '';
+      return res.redirect(`/payment-status.html?order_id=${encodeURIComponent(orderId)}${statusParam}`);
     }
   }
   res.sendFile(path.join(__dirname, 'public', 'payment-status.html'));

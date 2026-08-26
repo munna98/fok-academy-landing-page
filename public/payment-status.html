@@ -86,6 +86,12 @@
       border: 2px solid var(--red);
     }
 
+    .status-icon.cancelled {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 2px solid #f59e0b;
+    }
+
     .status-icon.loading {
       background: rgba(231, 169, 21, 0.12);
       color: var(--gold);
@@ -258,7 +264,7 @@
       const mockAction = urlParams.get('mock_action');
       const amount = urlParams.get('amount') || '499';
       const name = urlParams.get('name') || 'Student';
-      const email = urlParams.get('email') || '';
+      const urlStatus = urlParams.get('status');
 
       const statusCard = document.getElementById('statusCard');
 
@@ -303,7 +309,10 @@
             <button onclick="simulatePayment('SUCCESS')" class="btn btn-gold full btn-large">
               <i class="fa-solid fa-check-circle"></i> Pay ₹${amount} (Simulate Success)
             </button>
-            <button onclick="simulatePayment('FAILURE')" class="btn full" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">
+            <button onclick="simulatePayment('CANCELLED')" class="btn full" style="background: rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.4);">
+              <i class="fa-solid fa-ban"></i> Cancel Payment (Simulate Cancelled)
+            </button>
+            <button onclick="simulatePayment('FAILURE')" class="btn full" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.4);">
               <i class="fa-solid fa-xmark"></i> Simulate Failed Payment
             </button>
           </div>
@@ -323,11 +332,17 @@
           const data = await res.json();
 
           console.log('[ORDER STATUS API DATA]:', data);
-          console.log('[ORDER STATUS API JSON FORMAT]:', JSON.stringify(data, null, 2));
 
-          const paymentMethodLabel = data?.order?.paymentMethodType || 'HDFC Bank SmartGateway';
+          const orderObj = data?.order || {};
+          const statusVal = String(orderObj.status || urlStatus || '').toUpperCase();
+          const paymentMethodLabel = orderObj.paymentMethodType || 'HDFC Bank SmartGateway';
+          const displayAmount = orderObj.amount || amount;
 
-          if (data.success && data.order && data.order.verified === true) {
+          const isSuccess = data.success && (orderObj.verified === true || ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(statusVal));
+          const isCancelled = ['CANCELLED', 'USER_DROPPED', 'ABORTED', 'CANCEL', 'EXPIRED'].includes(statusVal);
+          const isFailed = ['FAILED', 'DECLINED', 'REJECTED', 'AUTHENTICATION_FAILED', 'FAILURE'].includes(statusVal);
+
+          if (isSuccess) {
             // SUCCESSFUL PAYMENT SCREEN
             statusCard.innerHTML = `
               <div class="status-icon success">
@@ -337,9 +352,9 @@
               <p>Welcome to FOK Academy! Your payment was processed securely via HDFC SmartGateway.</p>
 
               <div class="receipt-box">
-                <div class="receipt-row"><span>Order ID</span><strong>${data.order.orderId}</strong></div>
-                <div class="receipt-row"><span>Student Name</span><strong>${data.order.customerName || name}</strong></div>
-                <div class="receipt-row"><span>Amount Paid</span><strong>₹${data.order.amount}.00</strong></div>
+                <div class="receipt-row"><span>Order ID</span><strong>${orderObj.orderId || orderId}</strong></div>
+                <div class="receipt-row"><span>Student Name</span><strong>${orderObj.customerName || name}</strong></div>
+                <div class="receipt-row"><span>Amount Paid</span><strong>₹${displayAmount}.00</strong></div>
                 <div class="receipt-row"><span>Payment Method</span><strong>${paymentMethodLabel}</strong></div>
                 <div class="receipt-row"><span>Status</span><strong style="color: var(--green);">PAID & VERIFIED</strong></div>
               </div>
@@ -353,47 +368,75 @@
                 </a>
               </div>
             `;
-          } else if (data.success && data.order && data.order.status === 'CHARGED') {
+          } else if (isCancelled) {
+            // CANCELLED PAYMENT SCREEN
+            statusCard.innerHTML = `
+              <div class="status-icon cancelled">
+                <i class="fa-solid fa-ban"></i>
+              </div>
+              <h1>Payment Cancelled</h1>
+              <p>Your payment session was cancelled. No charges were made to your account.</p>
+
+              <div class="receipt-box">
+                <div class="receipt-row"><span>Order ID</span><strong>${orderObj.orderId || orderId}</strong></div>
+                <div class="receipt-row"><span>Amount</span><strong>₹${displayAmount}.00</strong></div>
+                <div class="receipt-row"><span>Transaction Status</span><strong style="color: #d97706;">CANCELLED</strong></div>
+              </div>
+
+              <div class="action-group">
+                <a href="checkout.html" class="btn btn-gold full btn-large">
+                  Try Enrolling Again →
+                </a>
+                <a href="index.html" class="btn btn-gold full" style="background: transparent; border: 1px solid var(--gold);">
+                  Return to Home Page
+                </a>
+              </div>
+            `;
+          } else if (isFailed) {
+            // FAILED PAYMENT SCREEN
+            statusCard.innerHTML = `
+              <div class="status-icon failed">
+                <i class="fa-solid fa-xmark"></i>
+              </div>
+              <h1>Payment Failed</h1>
+              <p>Your payment attempt could not be processed by HDFC SmartGateway. Please check your payment details or try again.</p>
+
+              <div class="receipt-box">
+                <div class="receipt-row"><span>Order ID</span><strong>${orderObj.orderId || orderId}</strong></div>
+                <div class="receipt-row"><span>Amount</span><strong>₹${displayAmount}.00</strong></div>
+                <div class="receipt-row"><span>Transaction Status</span><strong style="color: var(--red);">FAILED</strong></div>
+              </div>
+
+              <div class="action-group">
+                <a href="checkout.html" class="btn btn-gold full btn-large">
+                  Try Enrolling Again →
+                </a>
+                <a href="index.html" class="btn btn-gold full" style="background: transparent; border: 1px solid var(--gold);">
+                  Return to Home Page
+                </a>
+              </div>
+            `;
+          } else {
+            // PENDING STATUS SCREEN
             statusCard.innerHTML = `
               <div class="status-icon loading">
                 <i class="fa-solid fa-hourglass-half"></i>
               </div>
               <h1>Payment Awaiting Confirmation</h1>
-              <p>We received a sandbox gateway update, but the payment is not fully verified yet. Please wait a moment and check again.</p>
+              <p>We are waiting for payment confirmation from HDFC SmartGateway.</p>
 
               <div class="receipt-box">
-                <div class="receipt-row"><span>Order ID</span><strong>${data.order.orderId}</strong></div>
-                <div class="receipt-row"><span>Amount</span><strong>₹${data.order.amount || amount}.00</strong></div>
-                <div class="receipt-row"><span>Status</span><strong style="color: var(--gold);">${data.order.status}</strong></div>
-                <div class="receipt-row"><span>Verification</span><strong>${data.order.verificationSource || 'Pending'}</strong></div>
+                <div class="receipt-row"><span>Order ID</span><strong>${orderObj.orderId || orderId}</strong></div>
+                <div class="receipt-row"><span>Amount</span><strong>₹${displayAmount}.00</strong></div>
+                <div class="receipt-row"><span>Status</span><strong style="color: var(--gold);">${statusVal || 'PENDING'}</strong></div>
               </div>
 
               <div class="action-group">
                 <a href="javascript:window.location.reload()" class="btn btn-gold full btn-large">
                   Check Status Again
                 </a>
-                <a href="index.html#offer" class="btn btn-gold full" style="background: transparent; border: 1px solid var(--gold);">
+                <a href="checkout.html" class="btn btn-gold full" style="background: transparent; border: 1px solid var(--gold);">
                   Return to Checkout
-                </a>
-              </div>
-            `;
-          } else {
-            // FAILED PAYMENT SCREEN
-            statusCard.innerHTML = `
-              <div class="status-icon failed">
-                <i class="fa-solid fa-xmark"></i>
-              </div>
-              <h1>Payment Incomplete</h1>
-              <p>Your payment attempt was cancelled or failed to process with HDFC SmartGateway.</p>
-
-              <div class="receipt-box">
-                <div class="receipt-row"><span>Order ID</span><strong>${orderId}</strong></div>
-                <div class="receipt-row"><span>Status</span><strong style="color: #ef4444;">CANCELLED / FAILED</strong></div>
-              </div>
-
-              <div class="action-group">
-                <a href="index.html#offer" class="btn btn-gold full btn-large">
-                  Try Enrolling Again →
                 </a>
               </div>
             `;
