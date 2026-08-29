@@ -1801,6 +1801,10 @@ footer {
   }
 
   .q-card p {
+    font-size: 12px;
+  }
+}
+
 .footer-brand {
   display: flex;
   align-items: center;

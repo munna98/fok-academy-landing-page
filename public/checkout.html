@@ -377,7 +377,135 @@
         padding: 26px 20px;
       }
     }
+
+    /* Testing Notice Real Dialog Modal Overlay & Card Styling */
+    #testNoticeModal.modal-overlay {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: rgba(9, 26, 43, 0.88) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      z-index: 999999 !important;
+      display: none;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 20px !important;
+      box-sizing: border-box !important;
+    }
+
+    #testNoticeModal.modal-overlay.active {
+      display: flex !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+
+    #testNoticeModal .modal-card {
+      background: #0e2135 !important;
+      width: 100% !important;
+      max-width: 480px !important;
+      border-radius: 24px !important;
+      padding: 36px 30px !important;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(231, 169, 21, 0.35) !important;
+      color: white !important;
+      position: relative !important;
+      box-sizing: border-box !important;
+      animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.92) translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    #testNoticeModal .modal-close {
+      position: absolute !important;
+      top: 18px !important;
+      right: 18px !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: 50% !important;
+      color: white !important;
+      font-size: 22px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      line-height: 1 !important;
+    }
+
+    #testNoticeModal .modal-close:hover {
+      background: rgba(255, 255, 255, 0.25) !important;
+      color: var(--gold) !important;
+      transform: rotate(90deg) scale(1.1) !important;
+    }
+
+    .modal-contact-actions {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px !important;
+      margin-top: 24px !important;
+    }
+
+    .modal-whatsapp-btn {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%) !important;
+      color: white !important;
+      font-weight: 700 !important;
+      font-size: 15px !important;
+      padding: 15px 20px !important;
+      border-radius: 14px !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 10px !important;
+      box-shadow: 0 8px 20px rgba(37, 211, 102, 0.35) !important;
+      transition: all 0.25s ease !important;
+    }
+
+    .modal-whatsapp-btn:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 12px 28px rgba(37, 211, 102, 0.5) !important;
+      filter: brightness(1.08) !important;
+    }
+
+    .modal-phone-btn {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      color: #f8fafc !important;
+      font-weight: 700 !important;
+      font-size: 15px !important;
+      padding: 15px 20px !important;
+      border-radius: 14px !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 10px !important;
+      transition: all 0.25s ease !important;
+    }
+
+    .modal-phone-btn:hover {
+      background: rgba(255, 255, 255, 0.16) !important;
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      transform: translateY(-2px) !important;
+    }
   </style>
+
 </head>
 <body>
   <div class="checkout-page-wrap">
