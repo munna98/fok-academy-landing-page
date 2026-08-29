@@ -208,3 +208,35 @@ if (checkoutForm) {
     }
   });
 }
+
+// Testing Phase Notice Modal Handler
+document.addEventListener('DOMContentLoaded', () => {
+  const testNoticeModal = document.getElementById('testNoticeModal');
+  const closeBtn = document.getElementById('closeTestNoticeModal');
+
+  if (testNoticeModal) {
+    // Show modal automatically on page load
+    testNoticeModal.classList.add('active');
+
+    const closeModal = () => {
+      testNoticeModal.classList.remove('active');
+    };
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeModal);
+    }
+
+    testNoticeModal.addEventListener('click', (e) => {
+      if (e.target === testNoticeModal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && testNoticeModal.classList.contains('active')) {
+        closeModal();
+      }
+    });
+  }
+});
+
