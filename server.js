@@ -41,6 +41,29 @@ app.use(express.static(path.join(__dirname, 'public')));
 // In-memory order database for verification (In production, replace with DB like PostgreSQL/MongoDB)
 const ordersDB = new Map();
 
+// Helper: Authoritative Server-Side Price Whitelist (prevents parameter manipulation & amount tampering)
+const getWhitelistedPrices = () => {
+  const offerPrice = parseFloat(process.env.OFFER_PRICE || '499');
+  const regularPrice = parseFloat(process.env.REGULAR_PRICE || '899');
+  const auditPrice = parseFloat(process.env.AUDIT_PRICE || process.env.TEST_PRICE || '999');
+  
+  const allowed = [offerPrice, regularPrice, auditPrice];
+  if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE))) {
+    allowed.push(parseFloat(process.env.TEST_PRICE));
+  }
+
+  const validSet = Array.from(
+    new Set(allowed.filter((p) => typeof p === 'number' && !isNaN(p) && p > 0))
+  );
+
+  return {
+    offerPrice,
+    regularPrice,
+    auditPrice,
+    allowed: validSet
+  };
+};
+
 // Helper: HDFC SmartGateway API Configuration
 const getHdfcConfig = () => {
   const isSandbox = (process.env.HDFC_ENV || 'SANDBOX').toUpperCase() === 'SANDBOX';
@@ -279,16 +302,38 @@ app.post('/api/create-payment-order', async (req, res) => {
     // Extract all numeric digits from phone number (supports international and variable length numbers)
     const cleanPhone = phone.replace(/\D/g, '') || '9999999999';
 
-    // Determine amount (enforced server-side, supports user selected amount or env test price)
-    const reqAmount = parseFloat(req.body.amount);
+    // Strict Server-Side Amount Validation (Remediates OWASP Parameter Manipulation / Amount Tampering)
+    const { offerPrice, regularPrice, auditPrice, allowed } = getWhitelistedPrices();
+    const reqAmount = req.body.amount !== undefined && req.body.amount !== null ? parseFloat(req.body.amount) : null;
     let amount;
-    if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE)) && parseFloat(process.env.TEST_PRICE) > 0) {
+
+    if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE)) && parseFloat(process.env.TEST_PRICE) > 0 && String(process.env.STRICT_TEST_MODE).toLowerCase() === 'true') {
+      // Global test override mode enabled
       amount = parseFloat(process.env.TEST_PRICE);
-    } else if (!isNaN(reqAmount) && reqAmount > 0) {
+    } else if (reqAmount !== null && !isNaN(reqAmount)) {
+      // Validate client-supplied amount parameter against server-authoritative whitelisted price tiers
+      if (!allowed.includes(reqAmount)) {
+        console.warn(`[SECURITY ALERT] Parameter tampering attempt detected! Unwhitelisted amount received: ${reqAmount} INR from email: ${email}, phone: ${cleanPhone}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or tampered payment amount parameter. Transaction rejected.',
+          errorCode: 'ERR_PARAM_TAMPERING'
+        });
+      }
+
+      // Check offer timer expiration status: Reject ₹499 offer price requests after expiration
+      if (isExpired && reqAmount === offerPrice) {
+        console.warn(`[SECURITY ALERT] Expired offer price ₹${offerPrice} requested after expiration from email: ${email}`);
+        return res.status(400).json({
+          success: false,
+          message: `The ₹${offerPrice} introductory offer has expired. Please select regular price (₹${regularPrice}) or audit price (₹${auditPrice}).`,
+          errorCode: 'ERR_OFFER_EXPIRED'
+        });
+      }
+
       amount = reqAmount;
     } else {
-      const offerPrice = parseFloat(process.env.OFFER_PRICE || '499');
-      const regularPrice = parseFloat(process.env.REGULAR_PRICE || '899');
+      // Fallback: Compute authoritative amount strictly on the server based on timer state
       amount = isExpired ? regularPrice : offerPrice;
     }
 
@@ -421,30 +466,6 @@ app.post('/api/create-payment-order', async (req, res) => {
 
 /**
  * 2. GET /api/verify-payment
-    } else {
-      throw new Error(response.data?.error_message || 'Invalid session response structure from HDFC SmartGateway');
-    }
-
-  } catch (error) {
-    const errorDetails = error.response?.data || error.message;
-    console.error('[HDFC Gateway Session Error]:', JSON.stringify(errorDetails));
-
-    const errorMessage = error.response?.data?.error_message 
-      || error.response?.data?.message 
-      || (typeof error.response?.data === 'string' ? error.response.data : null)
-      || error.message 
-      || 'Payment session creation failed.';
-
-    return res.status(500).json({
-      success: false,
-      message: errorMessage,
-      error: errorDetails
-    });
-  }
-});
-
-/**
- * 2. GET /api/verify-payment
  * Verifies order status by checking internal DB or calling HDFC SmartGateway Status API S2S
  */
 app.get('/api/verify-payment', async (req, res) => {
@@ -522,8 +543,9 @@ app.get('/api/verify-payment', async (req, res) => {
           }
 
           const hdfcStatus = String(hdfcRes.data.status).toUpperCase();
-          order.status = hdfcStatus;
-          order.amount = parseFloat(hdfcRes.data.amount || order.amount || 0);
+          const paidAmount = parseFloat(hdfcRes.data.amount || 0);
+          const expectedAmount = parseFloat(order.amount || 0);
+
           order.currency = hdfcRes.data.currency || order.currency || 'INR';
           order.customerName = hdfcRes.data.customer_name || order.customerName || '';
           order.customerEmail = hdfcRes.data.customer_email || order.customerEmail || '';
@@ -536,12 +558,21 @@ app.get('/api/verify-payment', async (req, res) => {
             order.paymentMethodType ||
             '';
           order.hdfcDetails = hdfcRes.data;
-          order.verificationSource = 'status_api';
 
-          // Strictly set verified flag ONLY if status is CHARGED or SUCCESS
-          order.verified = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(hdfcStatus) && Boolean(order.transactionId);
+          // Cross-verify gateway paid amount with server expected order amount to catch parameter tampering
+          if (expectedAmount > 0 && paidAmount > 0 && Math.abs(paidAmount - expectedAmount) > 0.01) {
+            console.error(`[SECURITY ALERT] Payment amount mismatch for order ${order_id}! Server Expected: ${expectedAmount}, Gateway Paid: ${paidAmount}`);
+            order.status = 'AMOUNT_MISMATCH';
+            order.verified = false;
+            order.verificationSource = 'status_api_mismatch';
+          } else {
+            order.status = hdfcStatus;
+            order.verified = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(hdfcStatus) && Boolean(order.transactionId);
+            order.verificationSource = 'status_api';
+          }
+
           await saveOrder(order);
-          console.log(`[HDFC Status API S2S] Order ${order_id} verified status: ${order.status}, verified: ${order.verified}`);
+          console.log(`[HDFC Status API S2S] Order ${order_id} status: ${order.status}, verified: ${order.verified}`);
         }
       } catch (hdfcErr) {
         console.warn('[HDFC Status Check Notice]:', hdfcErr.response?.data || hdfcErr.message);
@@ -603,7 +634,9 @@ app.post('/api/payment-webhook', async (req, res) => {
     const { order_id, status, txn_id } = payload;
     const order = order_id ? await getStoredOrder(order_id) : null;
     if (order_id && order) {
-      order.status = status || 'CHARGED';
+      const webhookAmount = parseFloat(payload.amount || payload.order_amount || 0);
+      const expectedAmount = parseFloat(order.amount || 0);
+
       order.transactionId = txn_id || `TXN_${Date.now()}`;
       order.paymentMethodType =
         payload.payment_method_type ||
@@ -612,9 +645,18 @@ app.post('/api/payment-webhook', async (req, res) => {
         order.paymentMethodType ||
         '';
       order.hdfcDetails = payload;
-      order.verified = order.status === 'CHARGED';
       order.verificationSource = 'webhook';
       order.updatedAt = new Date().toISOString();
+
+      if (expectedAmount > 0 && webhookAmount > 0 && Math.abs(webhookAmount - expectedAmount) > 0.01) {
+        console.error(`[SECURITY ALERT] Webhook amount mismatch for order ${order_id}! Expected: ${expectedAmount}, Webhook Amount: ${webhookAmount}`);
+        order.status = 'AMOUNT_MISMATCH';
+        order.verified = false;
+      } else {
+        order.status = status || 'CHARGED';
+        order.verified = order.status === 'CHARGED' || order.status === 'SUCCESS';
+      }
+
       await saveOrder(order);
       console.log(`[HDFC Webhook] Order ${order_id} updated to ${order.status}`);
     }
