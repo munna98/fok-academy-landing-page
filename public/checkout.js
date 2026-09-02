@@ -86,9 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const paramAmount = urlParams.get('amount');
   const amountRadios = document.querySelectorAll('input[name="selected_amount"]');
 
-  if (paramAmount && ['499', '899', '999'].includes(paramAmount)) {
-    const targetRadio = document.querySelector(`input[name="selected_amount"][value="${paramAmount}"]`);
-    if (targetRadio) targetRadio.checked = true;
+  if (paramAmount) {
+    const cleanParam = paramAmount.replace('tier_', '');
+    if (['499', '899', '999'].includes(cleanParam)) {
+      const targetRadio = document.querySelector(`input[name="selected_amount"][value="tier_${cleanParam}"], input[name="selected_amount"][value="${cleanParam}"]`);
+      if (targetRadio) targetRadio.checked = true;
+    }
   }
 
   function updateAmountCardStyles() {
@@ -105,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const checkedRadio = document.querySelector('input[name="selected_amount"]:checked');
-    const selectedVal = checkedRadio ? checkedRadio.value : '499';
+    const displayAmount = checkedRadio ? (checkedRadio.dataset.amount || checkedRadio.value.replace('tier_', '')) : '499';
     const paySubmitBtn = document.getElementById('paySubmitBtn');
     const btnText = paySubmitBtn?.querySelector('.btn-text');
     if (btnText) {
-      btnText.textContent = `Proceed to HDFC SmartGateway (₹${selectedVal}) →`;
+      btnText.textContent = `Proceed to HDFC SmartGateway (₹${displayAmount}) →`;
     }
   }
 
@@ -171,9 +174,24 @@ if (checkoutForm) {
     if (paySubmitBtn) paySubmitBtn.disabled = true;
 
     const selectedRadio = document.querySelector('input[name="selected_amount"]:checked');
-    const selectedAmount = selectedRadio ? parseFloat(selectedRadio.value) : 499;
+    const selectedPlan = selectedRadio ? selectedRadio.value : 'tier_499';
 
     try {
+      // Step 1: Obtain tamper-proof HMAC-signed session token for the selected plan tier
+      const sessionRes = await fetch('/api/initiate-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: selectedPlan,
+          isExpired: isOfferExpired
+        })
+      });
+      const sessionData = await sessionRes.json();
+      if (!sessionData.success || !sessionData.sessionToken) {
+        throw new Error(sessionData.message || 'Unable to establish secure checkout session.');
+      }
+
+      // Step 2: Initiate HDFC Payment Order using the cryptographic session token
       const response = await fetch('/api/create-payment-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,8 +199,7 @@ if (checkoutForm) {
           name: nameVal,
           email: emailVal,
           phone: `${countryCodeVal}${phoneVal}`,
-          amount: selectedAmount,
-          isExpired: isOfferExpired
+          sessionToken: sessionData.sessionToken
         })
       });
 

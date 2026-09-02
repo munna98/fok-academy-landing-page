@@ -41,12 +41,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 // In-memory order database for verification (In production, replace with DB like PostgreSQL/MongoDB)
 const ordersDB = new Map();
 
-// Helper: Authoritative Server-Side Price Whitelist (prevents parameter manipulation & amount tampering)
+// Helper: Authoritative Server-Side Price Whitelist & Tier Mapping (prevents parameter manipulation & amount tampering)
 const getWhitelistedPrices = () => {
   const offerPrice = parseFloat(process.env.OFFER_PRICE || '499');
   const regularPrice = parseFloat(process.env.REGULAR_PRICE || '899');
   const auditPrice = parseFloat(process.env.AUDIT_PRICE || process.env.TEST_PRICE || '999');
   
+  const planMap = {
+    'tier_499': offerPrice,
+    'tier_899': regularPrice,
+    'tier_999': auditPrice,
+    '499': offerPrice,
+    '899': regularPrice,
+    '999': auditPrice
+  };
+
   const allowed = [offerPrice, regularPrice, auditPrice];
   if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE))) {
     allowed.push(parseFloat(process.env.TEST_PRICE));
@@ -60,7 +69,8 @@ const getWhitelistedPrices = () => {
     offerPrice,
     regularPrice,
     auditPrice,
-    allowed: validSet
+    allowed: validSet,
+    planMap
   };
 };
 
@@ -284,13 +294,88 @@ const getStoredOrder = async (orderId) => {
   }
 };
 
+const CHECKOUT_SESSION_SECRET = process.env.HDFC_RESPONSE_SECRET || process.env.SESSION_SECRET || 'fok_academy_checkout_hmac_secret_2026';
+
+const createSignedCheckoutToken = (planId, amount) => {
+  const payload = {
+    planId,
+    amount,
+    expiresAt: Date.now() + 20 * 60 * 1000,
+    nonce: crypto.randomBytes(8).toString('hex')
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto
+    .createHmac('sha256', CHECKOUT_SESSION_SECRET)
+    .update(encodedPayload)
+    .digest('hex');
+
+  return `${encodedPayload}.${signature}`;
+};
+
+const verifySignedCheckoutToken = (token) => {
+  if (!token || typeof token !== 'string' || !token.includes('.')) {
+    return { valid: false, reason: 'Malformed session token structure' };
+  }
+
+  const [encodedPayload, signature] = token.split('.');
+  const expectedSignature = crypto
+    .createHmac('sha256', CHECKOUT_SESSION_SECRET)
+    .update(encodedPayload)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    return { valid: false, reason: 'HMAC Signature Mismatch (Tampered Token)' };
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8'));
+    if (!payload.expiresAt || Date.now() > payload.expiresAt) {
+      return { valid: false, reason: 'Checkout session token expired' };
+    }
+    return { valid: true, payload };
+  } catch (e) {
+    return { valid: false, reason: 'Invalid token payload format' };
+  }
+};
+
+/**
+ * POST /api/initiate-checkout-session
+ * Issues an HMAC-signed, tamper-proof session token for the selected plan tier
+ */
+app.post('/api/initiate-checkout-session', (req, res) => {
+  try {
+    const { planMap, regularPrice, offerPrice } = getWhitelistedPrices();
+    const requestedPlan = String(req.body.planId || req.body.plan || 'tier_499').trim();
+
+    let amount = planMap[requestedPlan] || regularPrice;
+    let planId = planMap[requestedPlan] ? requestedPlan : 'tier_899';
+
+    if (req.body.isExpired && amount === offerPrice) {
+      amount = regularPrice;
+      planId = 'tier_899';
+    }
+
+    const sessionToken = createSignedCheckoutToken(planId, amount);
+
+    return res.json({
+      success: true,
+      sessionToken,
+      planId,
+      amount,
+      currency: 'INR'
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Could not initiate checkout session' });
+  }
+});
+
 /**
  * 1. POST /api/create-payment-order
  * Creates an order session with HDFC SmartGateway (or mock fallback for local test mode)
  */
 app.post('/api/create-payment-order', async (req, res) => {
   try {
-    const { name, email, phone, isExpired } = req.body;
+    const { name, email, phone, isExpired, sessionToken } = req.body;
 
     if (!name || !email || !phone) {
       return res.status(400).json({
@@ -302,39 +387,64 @@ app.post('/api/create-payment-order', async (req, res) => {
     // Extract all numeric digits from phone number (supports international and variable length numbers)
     const cleanPhone = phone.replace(/\D/g, '') || '9999999999';
 
-    // Strict Server-Side Amount Validation (Remediates OWASP Parameter Manipulation / Amount Tampering)
-    const { offerPrice, regularPrice, auditPrice, allowed } = getWhitelistedPrices();
-    const reqAmount = req.body.amount !== undefined && req.body.amount !== null ? parseFloat(req.body.amount) : null;
+    const { offerPrice, regularPrice, auditPrice, allowed, planMap } = getWhitelistedPrices();
     let amount;
+    let planId;
 
-    if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE)) && parseFloat(process.env.TEST_PRICE) > 0 && String(process.env.STRICT_TEST_MODE).toLowerCase() === 'true') {
-      // Global test override mode enabled
-      amount = parseFloat(process.env.TEST_PRICE);
-    } else if (reqAmount !== null && !isNaN(reqAmount)) {
-      // Validate client-supplied amount parameter against server-authoritative whitelisted price tiers
-      if (!allowed.includes(reqAmount)) {
-        console.warn(`[SECURITY ALERT] Parameter tampering attempt detected! Unwhitelisted amount received: ${reqAmount} INR from email: ${email}, phone: ${cleanPhone}`);
+    if (sessionToken) {
+      const verification = verifySignedCheckoutToken(sessionToken);
+      if (!verification.valid) {
+        console.warn(`[SECURITY ALERT] Invalid/Tampered sessionToken received from email: ${email}. Reason: ${verification.reason}`);
         return res.status(400).json({
           success: false,
-          message: 'Invalid or tampered payment amount parameter. Transaction rejected.',
+          message: 'Invalid or tampered checkout session. Transaction rejected.',
+          errorCode: 'ERR_SESSION_TAMPERED'
+        });
+      }
+      amount = verification.payload.amount;
+      planId = verification.payload.planId;
+      console.log(`[Cryptographic Session Verified] Plan: ${planId}, Amount: ${amount} INR for ${name}`);
+    } else {
+      // Fallback for API callers
+      const reqAmount = req.body.amount !== undefined && req.body.amount !== null ? parseFloat(req.body.amount) : null;
+      planId = String(req.body.planId || req.body.selected_plan || req.body.plan || '').trim();
+
+      if (process.env.TEST_PRICE && !isNaN(parseFloat(process.env.TEST_PRICE)) && parseFloat(process.env.TEST_PRICE) > 0 && String(process.env.STRICT_TEST_MODE).toLowerCase() === 'true') {
+        amount = parseFloat(process.env.TEST_PRICE);
+      } else if (planId && planMap[planId]) {
+        amount = planMap[planId];
+      } else if (reqAmount !== null && !isNaN(reqAmount)) {
+        if (!allowed.includes(reqAmount)) {
+          console.warn(`[SECURITY ALERT] Parameter tampering attempt! Unwhitelisted amount received: ${reqAmount} INR from email: ${email}`);
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid or tampered payment amount parameter. Transaction rejected.',
+            errorCode: 'ERR_PARAM_TAMPERING'
+          });
+        }
+        amount = reqAmount;
+      } else {
+        amount = isExpired ? regularPrice : offerPrice;
+      }
+
+      if (reqAmount !== null && !isNaN(reqAmount) && Math.abs(reqAmount - amount) > 0.01) {
+        console.warn(`[SECURITY ALERT] Parameter tampering attempt! Request amount: ${reqAmount} does not match plan price: ${amount}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Request amount does not match selected product tier. Transaction rejected.',
           errorCode: 'ERR_PARAM_TAMPERING'
         });
       }
+    }
 
-      // Check offer timer expiration status: Reject ₹499 offer price requests after expiration
-      if (isExpired && reqAmount === offerPrice) {
-        console.warn(`[SECURITY ALERT] Expired offer price ₹${offerPrice} requested after expiration from email: ${email}`);
-        return res.status(400).json({
-          success: false,
-          message: `The ₹${offerPrice} introductory offer has expired. Please select regular price (₹${regularPrice}) or audit price (₹${auditPrice}).`,
-          errorCode: 'ERR_OFFER_EXPIRED'
-        });
-      }
-
-      amount = reqAmount;
-    } else {
-      // Fallback: Compute authoritative amount strictly on the server based on timer state
-      amount = isExpired ? regularPrice : offerPrice;
+    // Check offer timer expiration status: Reject ₹499 offer price requests after expiration
+    if (isExpired && amount === offerPrice) {
+      console.warn(`[SECURITY ALERT] Expired offer price ₹${offerPrice} requested after expiration from email: ${email}`);
+      return res.status(400).json({
+        success: false,
+        message: `The ₹${offerPrice} introductory offer has expired. Please select regular price (₹${regularPrice}) or audit price (₹${auditPrice}).`,
+        errorCode: 'ERR_OFFER_EXPIRED'
+      });
     }
 
     // Generate unique order ID (must be alphanumeric, no special chars, < 21 chars)
@@ -619,7 +729,7 @@ app.post('/api/payment-webhook', async (req, res) => {
     const config = getHdfcConfig();
     const signature = req.headers['x-juspay-signature'] || req.headers['x-hdfc-signature'];
 
-    // Signature verification logic
+    // Signature verification logic (Strict Security Control)
     if (signature && config.responseSecret) {
       const calculatedSignature = crypto
         .createHmac('sha256', config.responseSecret)
@@ -627,7 +737,8 @@ app.post('/api/payment-webhook', async (req, res) => {
         .digest('hex');
 
       if (signature !== calculatedSignature) {
-        console.warn('[HDFC Webhook Warning] Signature mismatch!');
+        console.error(`[SECURITY ALERT] Invalid Webhook Signature! Expected: ${calculatedSignature}, Received: ${signature}`);
+        return res.status(401).json({ status: 'ERROR', message: 'Invalid webhook HMAC signature' });
       }
     }
 
