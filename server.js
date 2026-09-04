@@ -405,7 +405,7 @@ app.post('/api/create-payment-order', async (req, res) => {
       planId = verification.payload.planId;
       console.log(`[Cryptographic Session Verified] Plan: ${planId}, Amount: ${amount} INR for ${name}`);
     } else {
-      // Fallback for API callers
+      // Server-Authoritative Fallback: Require explicit planId. NEVER trust user-supplied raw amount.
       const reqAmount = req.body.amount !== undefined && req.body.amount !== null ? parseFloat(req.body.amount) : null;
       planId = String(req.body.planId || req.body.selected_plan || req.body.plan || '').trim();
 
@@ -413,22 +413,18 @@ app.post('/api/create-payment-order', async (req, res) => {
         amount = parseFloat(process.env.TEST_PRICE);
       } else if (planId && planMap[planId]) {
         amount = planMap[planId];
-      } else if (reqAmount !== null && !isNaN(reqAmount)) {
-        if (!allowed.includes(reqAmount)) {
-          console.warn(`[SECURITY ALERT] Parameter tampering attempt! Unwhitelisted amount received: ${reqAmount} INR from email: ${email}`);
-          return res.status(400).json({
-            success: false,
-            message: 'Invalid or tampered payment amount parameter. Transaction rejected.',
-            errorCode: 'ERR_PARAM_TAMPERING'
-          });
-        }
-        amount = reqAmount;
       } else {
-        amount = isExpired ? regularPrice : offerPrice;
+        console.warn(`[SECURITY ALERT] Request missing valid planId or sessionToken! Rejecting raw parameter request from email: ${email}`);
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or missing product tier plan ID. Transaction rejected.',
+          errorCode: 'ERR_PARAM_TAMPERING'
+        });
       }
 
+      // Security Integrity Check: Reject if client passed a raw amount parameter that contradicts the authoritative plan price
       if (reqAmount !== null && !isNaN(reqAmount) && Math.abs(reqAmount - amount) > 0.01) {
-        console.warn(`[SECURITY ALERT] Parameter tampering attempt! Request amount: ${reqAmount} does not match plan price: ${amount}`);
+        console.warn(`[SECURITY ALERT] Parameter tampering attempt! Client amount: ${reqAmount} does not match authoritative plan price: ${amount}`);
         return res.status(400).json({
           success: false,
           message: 'Request amount does not match selected product tier. Transaction rejected.',
