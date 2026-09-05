@@ -702,27 +702,25 @@ a {
   position: absolute;
   top: 18px;
   right: 18px;
+  z-index: 10;
   font-size: 10px;
   font-weight: 800;
-  padding: 4px 10px;
+  letter-spacing: 0.06em;
+  padding: 6px 14px;
   border-radius: 99px;
   text-transform: uppercase;
-}
-
-.product-tag.bestseller {
   background: var(--gold);
   color: var(--navy-2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
-.product-tag.amazon-choice {
-  background: #232f3e;
-  color: #febd69;
-  border: 1px solid #febd69;
-}
-
+.product-tag.bestseller,
+.product-tag.amazon-choice,
 .product-tag.popular {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
+  background: var(--gold);
+  color: var(--navy-2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .product-icon {
@@ -766,6 +764,76 @@ a {
   font-weight: 600;
   border-top: 1px dashed rgba(255, 255, 255, 0.1);
   padding-top: 10px;
+}
+
+/* Instant Trust Cards Styling */
+.trust-card-img-wrap {
+  width: 100%;
+  height: 210px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 18px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.trust-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  transition: transform 0.35s ease;
+}
+
+.trust-card-img.portrait {
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.trust-card-img.contain {
+  object-fit: contain;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.product-item:hover .trust-card-img {
+  transform: scale(1.06);
+}
+
+.trust-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.25s ease;
+}
+
+.trust-card-btn:hover {
+  background: var(--gold);
+  color: var(--navy-2);
+  border-color: var(--gold);
+  box-shadow: 0 6px 18px rgba(231, 169, 21, 0.25);
+}
+
+.trust-card-btn.linkedin-btn:hover {
+  background: #0a66c2;
+  color: white;
+  border-color: #0a66c2;
+  box-shadow: 0 6px 18px rgba(10, 102, 194, 0.35);
 }
 
 .storefront-footer {
