@@ -79,7 +79,7 @@ function updateCountdown() {
 
     if (mobileStickyCta) {
       const priceText = mobileStickyCta.querySelector(".mobile-cta-info span");
-      if (priceText) priceText.innerHTML = "₹899 <del>₹1299</del>";
+      if (priceText) priceText.innerHTML = "₹899";
     }
   }
 }
