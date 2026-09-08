@@ -322,8 +322,8 @@ a {
 .hero {
   position: relative;
   overflow: hidden;
-  padding: 80px 0 100px;
   background: linear-gradient(180deg, var(--cream) 0%, var(--cream-dark) 100%);
+  min-height: 680px;
 }
 
 .hero-glow {
@@ -334,13 +334,23 @@ a {
   height: 600px;
   background: radial-gradient(circle, rgba(231, 169, 21, 0.15) 0%, rgba(251, 250, 247, 0) 70%);
   pointer-events: none;
+  z-index: 2;
 }
 
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1fr 1fr;
   align-items: center;
-  gap: 50px;
+  min-height: 680px;
+  position: relative;
+  z-index: 2;
+  gap: 0;
+}
+
+.hero-copy {
+  padding: 90px 40px 90px 0;
+  position: relative;
+  z-index: 3;
 }
 
 .eyebrow, .section-kicker {
@@ -454,128 +464,89 @@ a {
   color: var(--muted);
 }
 
-/* Hero Visual Card */
+/* Keep the hero credibility points together on wide screens. */
+@media (min-width: 1200px) {
+  .proof-tags {
+    flex-wrap: nowrap;
+    gap: 9px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+}
+
+/* Hero Visual */
 .hero-visual {
   position: relative;
-  display: flex;
-  justify-content: center;
+  height: 100%;
+  min-height: 680px;
+  overflow: visible;
 }
 
-.visual-card {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  background: var(--navy-2);
-  border-radius: 28px;
-  padding: 16px;
-  box-shadow: var(--shadow);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.visual-badge {
+.hero-img-wrap {
   position: absolute;
-  top: 28px;
-  left: 28px;
-  z-index: 5;
-  background: var(--gold);
-  color: var(--navy-2);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  padding: 5px 12px;
-  border-radius: 99px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-.portrait-wrapper {
-  width: 100%;
-  height: 440px;
-  border-radius: 20px;
+  top: 0;
+  bottom: 0;
+  /* Extend left beyond the grid cell to create overlap for the gradient */
+  left: -80px;
+  /* Extend right to viewport edge */
+  right: calc(-50vw + 50%);
   overflow: hidden;
-  position: relative;
 }
 
-.hero-portrait {
+.hero-main-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 25%;
+  object-position: left center;
   display: block;
 }
 
-.instructor-overlay {
+/* Fallback overlay for stacked/mobile hero layouts. */
+.hero-img-fade {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
-  background: rgba(14, 33, 53, 0.88);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 14px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to right,
+    var(--cream) 0%,
+    rgba(251, 250, 247, 0.96) 5%,
+    rgba(251, 250, 247, 0.68) 10%,
+    rgba(251, 250, 247, 0.28) 16%,
+    rgba(251, 250, 247, 0.06) 22%,
+    rgba(251, 250, 247, 0) 28%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
-.inst-info strong {
-  display: block;
-  font-family: "Manrope", sans-serif;
-  font-size: 17px;
-  color: white;
-}
+/*
+  Fade the image itself on desktop rather than placing a solid cream layer over
+  it. The transparent portion reveals the hero's own background gradient, so
+  the join cannot form a vertical colour band.
+*/
+@media (min-width: 993px) {
+  .hero-main-img {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.3) 7%,
+      #000 18%,
+      #000 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.3) 7%,
+      #000 18%,
+      #000 100%
+    );
+  }
 
-.inst-info span {
-  display: block;
-  font-size: 11px;
-  color: var(--gold);
-  margin-top: 2px;
-}
-
-.floating-brand-badge {
-  position: absolute;
-  bottom: -25px;
-  right: -20px;
-  background: white;
-  color: var(--navy);
-  border-radius: 18px;
-  padding: 14px 18px;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.18);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--line);
-  z-index: 6;
-}
-
-.brand-mini-icon {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-  background: var(--navy);
-  padding: 6px;
-  border-radius: 10px;
-}
-
-.floating-brand-badge small {
-  display: block;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: var(--gold-dark);
-}
-
-.floating-brand-badge strong {
-  display: block;
-  font-family: "Manrope", sans-serif;
-  font-size: 15px;
-  line-height: 1.2;
-}
-
-.floating-brand-badge .rating {
-  font-size: 10px;
-  color: var(--gold);
-  font-weight: 700;
-  display: block;
-  margin-top: 2px;
+  .hero-img-fade {
+    display: none;
+  }
 }
 
 /* SECTION GLOBAL STYLES */
@@ -1907,17 +1878,45 @@ footer {
 
 /* RESPONSIVE MEDIA QUERIES & MOBILE OPTIMIZATIONS */
 @media (max-width: 992px) {
-  .hero-grid, .story-grid, .offer, .targeting-grid {
+  .hero {
+    flex-direction: column;
+    min-height: unset;
+  }
+
+  .hero-grid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 0;
+  }
+
+  .hero-copy {
+    padding: 60px 20px 36px;
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .hero-visual {
-    order: -1; /* Show Naseef & Storefront proof early on mobile! */
+    min-height: 380px;
+    height: 380px;
+    position: relative;
   }
 
-  .visual-card {
-    max-width: 100%;
+  .hero-img-wrap {
+    left: 0;
+    right: 0;
+  }
+
+  .hero-img-fade {
+    background: linear-gradient(
+      to bottom,
+      var(--cream) 0%,
+      rgba(251, 250, 247, 0.5) 12%,
+      rgba(251, 250, 247, 0) 38%
+    );
+  }
+
+  .story-grid, .offer, .targeting-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
   }
 
   .storefront-grid, .why-grid, .inside-grid, .testimonials-grid {
@@ -1927,15 +1926,8 @@ footer {
   .questions-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-
-  .floating-brand-badge {
-    position: relative;
-    right: 0;
-    bottom: 0;
-    margin-top: 15px;
-    width: 100%;
-  }
 }
+
 
 @media (max-width: 768px) {
   .container {
@@ -1981,7 +1973,32 @@ footer {
   }
 
   .hero {
-    padding: 40px 0 60px;
+    min-height: unset;
+  }
+
+  .hero-copy {
+    padding: 48px 16px 32px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero-visual {
+    min-height: 300px;
+    height: 300px;
+  }
+
+  .hero-img-wrap {
+    left: 0;
+    right: 0;
+  }
+
+  .hero-img-fade {
+    background: linear-gradient(
+      to bottom,
+      var(--cream) 0%,
+      rgba(251, 250, 247, 0.6) 10%,
+      rgba(251, 250, 247, 0) 32%
+    );
   }
 
   .hero h1 {
