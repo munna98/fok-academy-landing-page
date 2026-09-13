@@ -277,8 +277,8 @@
       </div>
 
       <!-- Marquee Track Wrapper -->
-      <div class="video-marquee-wrapper">
-        <div class="video-marquee-track">
+      <div class="video-marquee-wrapper" id="videoMarqueeWrapper">
+        <div class="video-marquee-track" id="videoMarqueeTrack">
           <!-- CARD 1 -->
           <div class="video-card" data-drive-id="1Q7-jKP5t0X_CSBZvmtzViozeETpDFzJ1" data-author="Rahul Sharma" data-role="Amazon Seller" data-location="Kochi, Kerala">
             <div class="video-card-media">
@@ -441,7 +441,19 @@
           </div>
         </div>
       </div>
-      <div class="marquee-hint"><i class="fa-solid fa-hand-pointer text-gold"></i> Hover or tap any video card to pause & watch attendee experience</div>
+      <!-- Desktop hint (hidden on mobile) -->
+      <div class="marquee-hint desktop-marquee-hint"><i class="fa-solid fa-arrows-left-right text-gold"></i> Auto-scrolling &mdash; hover to pause</div>
+      <!-- Mobile swipe hint + dot indicators (hidden on desktop) -->
+      <div class="mobile-scroll-hint" id="mobileScrollHint">
+        <i class="fa-solid fa-hand-pointer text-gold"></i> Swipe to explore reviews
+      </div>
+      <div class="scroll-dots" id="scrollDots">
+        <span class="scroll-dot active" data-index="0"></span>
+        <span class="scroll-dot" data-index="1"></span>
+        <span class="scroll-dot" data-index="2"></span>
+        <span class="scroll-dot" data-index="3"></span>
+        <span class="scroll-dot" data-index="4"></span>
+      </div>
     </section>
 
     <!-- SECTION 9 — WHO IS THIS FOR / NOT FOR -->

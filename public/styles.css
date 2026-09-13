@@ -1382,6 +1382,94 @@ a {
   animation-play-state: paused !important;
 }
 
+/* ── Video Marquee Mobile Responsive ── */
+@media (max-width: 768px) {
+  .testimonials-section {
+    padding: 60px 0 70px;
+  }
+
+  .video-marquee-wrapper {
+    margin-top: 30px;
+    padding: 10px 0 20px;
+    /* Disable gradient fade on mobile so full card edges are always visible */
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .video-marquee-track {
+    gap: 16px;
+    /* Slightly faster on mobile for better feel */
+    animation-duration: 28s;
+  }
+
+  .video-card {
+    width: 220px;
+    border-radius: 18px;
+  }
+
+  .video-card-media {
+    height: 390px;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .card-inline-video {
+    top: -36px;
+    left: -6%;
+    width: 112%;
+    height: calc(100% + 48px);
+    border-radius: 18px 18px 0 0;
+  }
+
+  .video-card-info {
+    padding: 12px 14px;
+  }
+
+  .author-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+
+  .author-name {
+    font-size: 13px;
+  }
+
+  .author-role {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-card {
+    width: 72vw;
+    max-width: 280px;
+    border-radius: 16px;
+  }
+
+  .video-card-media {
+    height: calc(72vw * 1.77); /* 9:16 aspect ratio based on card width */
+    max-height: 440px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .card-inline-video {
+    top: -34px;
+    left: -5%;
+    width: 110%;
+    height: calc(100% + 46px);
+    border-radius: 16px 16px 0 0;
+  }
+
+  .video-marquee-track {
+    gap: 14px;
+  }
+
+  .video-card:hover {
+    /* Disable lift on touch devices */
+    transform: none;
+  }
+}
+
 /* SECTION 9 — TARGETING (FOR vs NOT FOR) */
 .targeting-section {
   background: white;
