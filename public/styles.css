@@ -1382,33 +1382,51 @@ a {
   animation-play-state: paused !important;
 }
 
-/* ── Video Marquee Mobile Responsive ── */
+/* ── Video Marquee: Mobile Swipeable Snap-Scroll ── */
 @media (max-width: 768px) {
   .testimonials-section {
     padding: 60px 0 70px;
   }
 
+  /* Swipeable scroll container — animation disabled, JS handles infinite loop */
   .video-marquee-wrapper {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
     margin-top: 30px;
-    padding: 10px 0 20px;
-    /* Disable gradient fade on mobile so full card edges are always visible */
+    padding: 10px 0 24px;
     -webkit-mask-image: none;
     mask-image: none;
+    scrollbar-width: none;
+  }
+  .video-marquee-wrapper::-webkit-scrollbar {
+    display: none;
   }
 
   .video-marquee-track {
+    animation: none !important;
     gap: 16px;
-    /* Slightly faster on mobile for better feel */
-    animation-duration: 28s;
+    width: max-content;
   }
 
+  /* Each card snaps to centre */
   .video-card {
-    width: 220px;
+    scroll-snap-align: center;
+    width: 78vw;
+    max-width: 300px;
     border-radius: 18px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .video-card:hover,
+  .video-card:active {
+    transform: none;
   }
 
   .video-card-media {
-    height: 390px;
+    height: calc(78vw * 1.6);
+    max-height: 440px;
     border-radius: 18px 18px 0 0;
   }
 
@@ -1441,32 +1459,13 @@ a {
 
 @media (max-width: 480px) {
   .video-card {
-    width: 72vw;
-    max-width: 280px;
-    border-radius: 16px;
+    width: 82vw;
+    max-width: 310px;
   }
 
   .video-card-media {
-    height: calc(72vw * 1.77); /* 9:16 aspect ratio based on card width */
-    max-height: 440px;
-    border-radius: 16px 16px 0 0;
-  }
-
-  .card-inline-video {
-    top: -34px;
-    left: -5%;
-    width: 110%;
-    height: calc(100% + 46px);
-    border-radius: 16px 16px 0 0;
-  }
-
-  .video-marquee-track {
-    gap: 14px;
-  }
-
-  .video-card:hover {
-    /* Disable lift on touch devices */
-    transform: none;
+    height: calc(82vw * 1.6);
+    max-height: 460px;
   }
 }
 
