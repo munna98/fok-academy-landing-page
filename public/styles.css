@@ -1206,47 +1206,180 @@ a {
   line-height: 1.6;
 }
 
-/* SECTION 8 — TESTIMONIALS */
+/* SECTION 8 — STUDENT VIDEO TESTIMONIALS (MARQUEE) */
 .testimonials-section {
-  background: var(--cream-dark);
+  background: var(--navy-2);
+  color: white;
+  padding: 90px 0 80px;
+  position: relative;
+  overflow: hidden;
 }
 
-.testimonials-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+.testimonials-section .section-kicker {
+  color: var(--gold);
 }
 
-.t-card {
-  margin: 0;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 30px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+.testimonials-section h2 {
+  color: white;
+}
+
+.testimonials-section .section-intro {
+  color: #94a3b8;
+  max-width: 680px;
+  margin: 12px auto 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Marquee Outer Wrapper with Gradient Fades on edges */
+.video-marquee-wrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  margin-top: 45px;
+  padding: 15px 0 25px;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+}
+
+/* Marquee Moving Track */
+.video-marquee-track {
+  display: flex;
+  gap: 24px;
+  width: max-content;
+  will-change: transform;
+  animation: marqueeScroll 38s linear infinite;
+}
+
+.video-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marqueeScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-50% - 12px));
+  }
+}
+
+/* Video Card Styling */
+.video-card {
+  width: 270px;
+  flex-shrink: 0;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(231, 169, 21, 0.3);
+  border-radius: 24px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+  user-select: none;
+}
+
+.video-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--gold);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(231, 169, 21, 0.4);
+}
+
+/* Card Media Container — Exact 9:16 Vertical Video Aspect Ratio */
+.video-card-media {
+  position: relative;
+  height: 480px;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+  border-radius: 24px 24px 0 0;
+}
+
+/* Smart Crop on Drive iframe to eliminate side black bars & top Drive header/pop-out icon */
+.card-inline-video {
+  position: absolute;
+  top: -42px;
+  left: -8%;
+  width: 116%;
+  height: calc(100% + 56px);
+  border: none;
+  background: #000;
+  border-radius: 24px 24px 0 0;
+  pointer-events: auto;
+}
+
+/* Card Info Footer */
+.video-card-info {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.t-card p {
+.video-author-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #be185d);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.alt-avatar-1 { background: linear-gradient(135deg, #38bdf8, #0284c7); color: white; }
+.alt-avatar-2 { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+.alt-avatar-3 { background: linear-gradient(135deg, #e11d48, #9f1239); color: white; }
+.alt-avatar-4 { background: linear-gradient(135deg, #fbbf24, #d97706); color: var(--navy-2); }
+
+.author-name {
+  display: block;
   font-size: 15px;
-  color: #334155;
-  margin: 14px 0 20px;
-  line-height: 1.6;
-  font-style: italic;
+  font-weight: 800;
+  color: white;
+  line-height: 1.2;
 }
 
-.t-card footer b {
+.author-role {
   display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+.video-card-info .stars {
+  color: var(--gold);
+  font-size: 12px;
+  display: flex;
+  gap: 2px;
+}
+
+.marquee-hint {
+  text-align: center;
+  margin-top: 24px;
   font-size: 13px;
-  color: var(--navy);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.t-card footer span {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
+.video-marquee-track.is-paused-for-video {
+  animation-play-state: paused !important;
 }
 
 /* SECTION 9 — TARGETING (FOR vs NOT FOR) */

@@ -163,3 +163,27 @@ document.addEventListener('click', (e) => {
     }
   }
 });
+
+// 4. Plain Video Cards Marquee Control
+const marqueeTrack = document.querySelector(".video-marquee-track");
+
+function pauseMarquee() {
+  if (marqueeTrack) {
+    marqueeTrack.style.animationPlayState = "paused";
+  }
+}
+
+function resumeMarquee() {
+  if (marqueeTrack) {
+    marqueeTrack.style.animationPlayState = "running";
+  }
+}
+
+document.querySelectorAll(".video-card").forEach((card) => {
+  card.addEventListener("mouseenter", pauseMarquee);
+  card.addEventListener("mouseleave", resumeMarquee);
+  card.addEventListener("touchstart", pauseMarquee, { passive: true });
+});
+
+
+
