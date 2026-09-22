@@ -834,108 +834,292 @@ a {
   color: var(--gold);
 }
 
-/* SECTION 3 — NASEEF'S STORY & TIMELINE */
-.story-section {
+/* SECTION 3 — COURSE STRUCTURE (SYLLABUS) */
+.syllabus-section {
   background: var(--cream);
+  position: relative;
 }
 
-.story-grid {
+.syllabus-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  align-items: center;
+  gap: 32px;
+  margin-bottom: 40px;
+  align-items: stretch;
 }
 
-.story-copy h2 {
-  font-family: "Manrope", sans-serif;
-  font-size: clamp(32px, 3.5vw, 48px);
-  line-height: 1.1;
-  color: var(--navy);
-  margin: 10px 0 22px;
-}
-
-.story-copy h2 span {
-  color: var(--gold-dark);
-}
-
-.story-copy p {
-  color: var(--muted);
-  font-size: 16px;
-  margin-bottom: 16px;
-}
-
-.timeline-box {
+.syllabus-card {
   background: white;
   border-radius: 24px;
   padding: 32px;
   border: 1px solid var(--line);
-  box-shadow: 0 16px 45px rgba(0,0,0,0.05);
-}
-
-.timeline-box h3 {
-  font-family: "Manrope", sans-serif;
-  font-size: 20px;
-  color: var(--navy);
-  margin: 0 0 24px;
-  border-bottom: 2px solid var(--gold);
-  padding-bottom: 10px;
-  display: inline-block;
-}
-
-.timeline-steps {
+  box-shadow: 0 16px 45px rgba(14, 33, 53, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-.timeline-step {
-  display: flex;
+.syllabus-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px rgba(14, 33, 53, 0.1);
+  border-color: rgba(231, 169, 21, 0.4);
+}
+
+.day-card-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.day-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: var(--cream);
-  border: 1px solid rgba(0,0,0,0.04);
-}
-
-.timeline-step.highlight {
+  gap: 8px;
+  font-family: "Manrope", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 6px 14px;
+  border-radius: 99px;
   background: var(--navy);
-  color: white;
-  border-color: var(--gold);
+  color: var(--gold);
+  margin-bottom: 12px;
 }
 
-.timeline-step.highlight .step-num {
+.day-2-badge {
+  background: var(--navy-2);
+  color: #f5bd2b;
+  border: 1px solid rgba(231, 169, 21, 0.35);
+}
+
+.day-card-header h3 {
+  font-family: "Manrope", sans-serif;
+  font-size: 22px;
+  color: var(--navy);
+  margin: 0 0 8px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.day-desc {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.topic-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--cream);
+  border: 1px solid rgba(25, 50, 76, 0.05);
+  transition: background 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.topic-item:hover {
+  background: #f4efdf;
+  border-color: rgba(231, 169, 21, 0.35);
+  transform: translateX(4px);
+}
+
+.topic-num {
+  font-family: "Manrope", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--navy);
+  background: rgba(231, 169, 21, 0.18);
+  min-width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.topic-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topic-details strong {
+  font-family: "Manrope", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.topic-details span {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Special Highlighted Topics */
+.topic-item.highlight-workshop {
+  background: linear-gradient(135deg, var(--navy-2) 0%, var(--navy) 100%);
+  border: 1px solid var(--gold);
+  box-shadow: 0 8px 24px rgba(14, 33, 53, 0.2);
+}
+
+.topic-item.highlight-workshop:hover {
+  background: var(--navy-2);
+  transform: translateX(4px);
+}
+
+.topic-item.highlight-workshop .topic-num {
   background: var(--gold);
   color: var(--navy-2);
 }
 
-.timeline-step.highlight .step-content span {
-  color: #cad8e6;
+.topic-item.highlight-workshop .topic-details strong {
+  color: white;
 }
 
-.step-num {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: #e8ecf1;
-  color: var(--navy);
+.topic-item.highlight-workshop .topic-details span {
+  color: #cbd5e1;
+}
+
+.workshop-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
   font-weight: 800;
-  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.topic-item.highlight-success {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+  border: 1px solid #34d399;
+  box-shadow: 0 8px 24px rgba(6, 78, 59, 0.2);
+}
+
+.topic-item.highlight-success:hover {
+  background: #064e3b;
+  transform: translateX(4px);
+}
+
+.topic-item.highlight-success .topic-num {
+  background: #34d399;
+  color: #064e3b;
+}
+
+.topic-item.highlight-success .topic-details strong {
+  color: white;
+}
+
+.topic-item.highlight-success .topic-details span {
+  color: #a7f3d0;
+}
+
+.workshop-tag.success-tag {
+  color: #34d399;
+}
+
+/* BONUS ITEM INSIDE DAY 2 CARD */
+.topic-bonus-box {
+  margin-top: auto; /* Pushes to bottom of Day 2 topic list to balance heights! */
+  padding-top: 14px;
+  background: linear-gradient(135deg, var(--navy-2) 0%, #17334f 100%);
+  border: 1.5px solid var(--gold);
+  border-radius: 20px;
+  padding: 18px 20px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(14, 33, 53, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.topic-bonus-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(14, 33, 53, 0.22);
+}
+
+.topic-bonus-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.topic-bonus-badge {
+  font-family: "Manrope", sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topic-bonus-pill {
+  font-size: 10px;
+  font-weight: 800;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 3px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.topic-bonus-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.topic-bonus-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 14px;
+  background: rgba(231, 169, 21, 0.18);
+  border: 1px solid rgba(231, 169, 21, 0.4);
+  color: var(--gold);
   display: grid;
   place-items: center;
-  flex-shrink: 0;
+  font-size: 20px;
+  margin-top: 2px;
 }
 
-.step-content strong {
+.topic-bonus-details strong {
   display: block;
-  font-size: 14px;
+  font-family: "Manrope", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 4px;
 }
 
-.step-content span {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
+.topic-bonus-details p {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.45;
 }
 
 /* SECTION 4 — WHY LEARN FROM NASEEF? */
@@ -1921,9 +2105,20 @@ footer {
 
 /* RESPONSIVE MEDIA QUERIES & MOBILE OPTIMIZATIONS */
 @media (max-width: 992px) {
-  .hero-grid, .story-grid, .offer, .targeting-grid {
+  .hero-grid, .syllabus-grid, .offer, .targeting-grid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 30px;
+  }
+
+  .syllabus-bonus-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px 24px;
+  }
+
+  .bonus-content {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .hero-visual {
@@ -2153,9 +2348,9 @@ footer {
     display: none;
   }
 
-  .story-grid, .offer, .targeting-grid {
+  .syllabus-grid, .offer, .targeting-grid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 24px;
   }
 
   .storefront-grid, .why-grid, .inside-grid, .testimonials-grid {
