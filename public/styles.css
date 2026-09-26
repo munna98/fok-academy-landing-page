@@ -1494,6 +1494,62 @@ a {
   border-radius: 24px 24px 0 0;
 }
 
+/* Custom Play/Pause Overlay Button */
+.video-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 5;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(231, 169, 21, 0.25);
+  transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+  pointer-events: none;
+}
+
+.video-card:hover .video-play-btn {
+  transform: translate(-50%, -50%) scale(1.1);
+  border-color: var(--gold);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.video-card .play-icon {
+  display: block;
+  margin-left: 3px;
+}
+
+.video-card .pause-icon {
+  display: none;
+}
+
+.video-card.is-playing .play-icon {
+  display: none;
+}
+
+.video-card.is-playing .pause-icon {
+  display: block;
+}
+
+.video-card.is-playing .video-play-btn {
+  opacity: 0;
+}
+
+.video-card.is-playing:hover .video-play-btn {
+  opacity: 1;
+}
+
 /* Card Info Footer */
 .video-card-info {
   padding: 16px 18px;

@@ -181,25 +181,48 @@ function resumeMarquee() {
   if (marqueeTrack) marqueeTrack.style.animationPlayState = 'running';
 }
 
-document.querySelectorAll('.video-card').forEach((card) => {
+const videoCards = document.querySelectorAll('.video-card');
+
+function pauseAllVideos(exceptCard = null) {
+  videoCards.forEach((card) => {
+    if (card !== exceptCard) {
+      const video = card.querySelector('video');
+      if (video) {
+        video.pause();
+      }
+      card.classList.remove('is-playing');
+    }
+  });
+}
+
+videoCards.forEach((card) => {
   card.addEventListener('mouseenter', () => { if (!isMobile()) pauseMarquee(); });
   card.addEventListener('mouseleave', () => { if (!isMobile()) resumeMarquee(); });
 
   const video = card.querySelector('video');
-  if (video) {
-    card.addEventListener('click', () => {
-      if (video.muted) {
-        video.muted = false;
-        if (video.paused) video.play();
-      } else {
-        if (video.paused) {
-          video.play();
-        } else {
-          video.pause();
-        }
-      }
-    });
-  }
+  if (!video) return;
+
+  // Track video events to ensure correct icon state
+  video.addEventListener('play', () => {
+    card.classList.add('is-playing');
+  });
+  video.addEventListener('pause', () => {
+    card.classList.remove('is-playing');
+  });
+
+  card.addEventListener('click', () => {
+    if (video.paused) {
+      pauseAllVideos(card);
+      video.muted = false;
+      video.play().catch(() => {
+        // Fallback for strict browser autoplay policies
+        video.muted = true;
+        video.play();
+      });
+    } else {
+      video.pause();
+    }
+  });
 });
 
 // Mobile: seamless infinite loop
