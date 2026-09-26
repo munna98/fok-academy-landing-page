@@ -1481,17 +1481,17 @@ a {
   border-radius: 24px 24px 0 0;
 }
 
-/* Smart Crop on Drive iframe to eliminate side black bars & top Drive header/pop-out icon */
+/* HTML5 Video Element inside card */
 .card-inline-video {
   position: absolute;
-  top: -42px;
-  left: -8%;
-  width: 116%;
-  height: calc(100% + 56px);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   border: none;
   background: #000;
   border-radius: 24px 24px 0 0;
-  pointer-events: auto;
 }
 
 /* Card Info Footer */
@@ -1615,12 +1615,12 @@ a {
   }
 
   .card-inline-video {
-    top: -36px;
-    left: -6%;
-    width: 112%;
-    height: calc(100% + 48px);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     border-radius: 18px 18px 0 0;
-    pointer-events: auto;
+    object-fit: cover;
   }
 
   .video-card-info {

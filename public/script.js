@@ -184,6 +184,22 @@ function resumeMarquee() {
 document.querySelectorAll('.video-card').forEach((card) => {
   card.addEventListener('mouseenter', () => { if (!isMobile()) pauseMarquee(); });
   card.addEventListener('mouseleave', () => { if (!isMobile()) resumeMarquee(); });
+
+  const video = card.querySelector('video');
+  if (video) {
+    card.addEventListener('click', () => {
+      if (video.muted) {
+        video.muted = false;
+        if (video.paused) video.play();
+      } else {
+        if (video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      }
+    });
+  }
 });
 
 // Mobile: seamless infinite loop
