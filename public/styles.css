@@ -1612,15 +1612,6 @@ a {
     height: calc(78vw * 1.6);
     max-height: 440px;
     border-radius: 18px 18px 0 0;
-    position: relative;
-  }
-
-  .video-card-media::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    background: transparent;
   }
 
   .card-inline-video {
@@ -1629,7 +1620,7 @@ a {
     width: 112%;
     height: calc(100% + 48px);
     border-radius: 18px 18px 0 0;
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .video-card-info {
