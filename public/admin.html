@@ -633,6 +633,195 @@
     .save-feedback.error {
       color: #dc2626;
     }
+
+    /* ==========================================================================
+       RESPONSIVE & MOBILE DESIGN SYSTEM FOR ADMIN DASHBOARD
+       ========================================================================== */
+    @media (max-width: 992px) {
+      .admin-main {
+        width: min(100%, calc(100% - 32px));
+        margin: 24px auto 40px;
+      }
+
+      .table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        padding: 16px;
+      }
+
+      .search-box {
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 12px;
+      }
+
+      .date-range-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .date-range-group .select-filter {
+        grid-column: 1 / -1;
+      }
+
+      .date-input-wrap {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        width: 100%;
+      }
+
+      .date-input-wrap input[type="date"] {
+        width: 100%;
+      }
+
+      .select-filter, .btn-refresh {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .admin-header {
+        padding: 12px 0;
+      }
+
+      .admin-header-container {
+        width: min(100%, calc(100% - 28px));
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .admin-brand img {
+        height: 40px;
+      }
+
+      .admin-brand strong {
+        font-size: 18px;
+      }
+
+      .admin-user-bar {
+        width: 100%;
+        justify-content: space-between;
+        padding-top: 10px;
+        border-top: 1px dashed rgba(25, 50, 76, 0.1);
+      }
+
+      .dashboard-title-area h1 {
+        font-size: 24px;
+      }
+
+      .dashboard-title-area p {
+        font-size: 13px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .metric-card {
+        padding: 16px 14px;
+        border-radius: 16px;
+        gap: 12px;
+      }
+
+      .metric-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 16px;
+        border-radius: 12px;
+      }
+
+      .metric-details small {
+        font-size: 10px;
+      }
+
+      .metric-details strong {
+        font-size: 20px;
+      }
+
+      .batch-admin-card {
+        padding: 18px 16px;
+        border-radius: 18px;
+        margin-bottom: 24px;
+      }
+
+      .batch-admin-header h3 {
+        font-size: 17px;
+      }
+
+      .batch-form-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .batch-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn-save-batch {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .table-container-card {
+        border-radius: 18px;
+      }
+
+      table.orders-table th {
+        padding: 10px 12px;
+        font-size: 10px;
+      }
+
+      table.orders-table td {
+        padding: 12px 14px;
+        font-size: 12px;
+      }
+
+      .order-id-code {
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .admin-main {
+        width: min(100%, calc(100% - 20px));
+        margin: 16px auto 32px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .metric-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px;
+        gap: 8px;
+      }
+
+      .metric-details strong {
+        font-size: 18px;
+      }
+
+      .date-range-group {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
