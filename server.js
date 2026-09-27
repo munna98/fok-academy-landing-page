@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const axios = require('axios');
 require('dotenv').config();
@@ -40,6 +41,51 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory order database for verification (In production, replace with DB like PostgreSQL/MongoDB)
 const ordersDB = new Map();
+
+// Persistent Workshop Batch Settings Storage
+const BATCH_FILE_PATH = path.join(__dirname, 'batch-settings.json');
+
+const DEFAULT_BATCH_SETTINGS = {
+  dates: 'Oct 3-4 (Sat-Sun)',
+  month: 'October 2026 Batch',
+  timing: '7:00 PM - 9:00 PM IST',
+  mode: 'Live on Zoom',
+  seatsText: 'Seats filling fast! Reserve yours today.',
+  status: 'Enrollment Open',
+  updatedAt: new Date().toISOString()
+};
+
+let inMemoryBatchSettings = null;
+
+const getBatchSettings = () => {
+  if (inMemoryBatchSettings) return inMemoryBatchSettings;
+  try {
+    if (fs.existsSync(BATCH_FILE_PATH)) {
+      const data = fs.readFileSync(BATCH_FILE_PATH, 'utf8');
+      inMemoryBatchSettings = JSON.parse(data);
+      return inMemoryBatchSettings;
+    }
+  } catch (err) {
+    console.warn('[Batch Settings Warning]: Could not read batch-settings.json:', err.message);
+  }
+  inMemoryBatchSettings = { ...DEFAULT_BATCH_SETTINGS };
+  return inMemoryBatchSettings;
+};
+
+const saveBatchSettings = (newSettings) => {
+  const updated = {
+    ...getBatchSettings(),
+    ...newSettings,
+    updatedAt: new Date().toISOString()
+  };
+  inMemoryBatchSettings = updated;
+  try {
+    fs.writeFileSync(BATCH_FILE_PATH, JSON.stringify(updated, null, 2), 'utf8');
+  } catch (err) {
+    console.error('[Batch Settings Error]: Could not write to batch-settings.json:', err.message);
+  }
+  return updated;
+};
 
 // Helper: Authoritative Server-Side Price Whitelist & Tier Mapping (prevents parameter manipulation & amount tampering)
 const getWhitelistedPrices = () => {
@@ -875,6 +921,62 @@ app.get('/api/admin/orders', async (req, res) => {
       success: false,
       message: 'Unable to load admin orders.'
     });
+  }
+});
+
+/**
+ * GET /api/batch-dates
+ * Public endpoint returning current workshop batch schedule
+ */
+app.get('/api/batch-dates', (req, res) => {
+  try {
+    const batch = getBatchSettings();
+    return res.json({
+      success: true,
+      batch
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to fetch batch dates'
+    });
+  }
+});
+
+/**
+ * POST /api/admin/batch-dates
+ * Authenticated admin endpoint to update current workshop batch schedule
+ */
+app.post('/api/admin/batch-dates', async (req, res) => {
+  try {
+    const user = await getAdminUserFromRequest(req);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const { dates, month, timing, mode, seatsText, status } = req.body;
+    if (!dates || !month) {
+      return res.status(400).json({ success: false, message: 'Batch dates and month are required.' });
+    }
+
+    const updated = saveBatchSettings({
+      dates: String(dates).trim(),
+      month: String(month).trim(),
+      timing: String(timing || '7:00 PM - 9:00 PM IST').trim(),
+      mode: String(mode || 'Live on Zoom').trim(),
+      seatsText: String(seatsText || 'Seats filling fast! Reserve yours today.').trim(),
+      status: String(status || 'Enrollment Open').trim()
+    });
+
+    console.log('[Admin Batch Updated]:', updated);
+    return res.json({
+      success: true,
+      message: 'Batch details updated successfully.',
+      batch: updated
+    });
+  } catch (error) {
+    console.error('[Admin Batch Error]:', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to update batch dates.' });
   }
 });
 

@@ -488,6 +488,151 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Batch Admin Card */
+    .batch-admin-card {
+      background: white;
+      border: 1px solid rgba(25, 50, 76, 0.09);
+      border-radius: 24px;
+      padding: 24px 28px;
+      box-shadow: 0 16px 50px rgba(14, 33, 53, 0.06);
+      margin-bottom: 32px;
+    }
+
+    .batch-admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .batch-admin-header h3 {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .batch-admin-header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: #5f6f81;
+    }
+
+    .btn-secondary-sm {
+      background: #f1f5f9;
+      color: var(--navy);
+      border: 1px solid #cbd5e1;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary-sm:hover {
+      background: #e2e8f0;
+    }
+
+    .batch-admin-form {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px dashed rgba(25, 50, 76, 0.12);
+    }
+
+    .batch-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-group input, .form-group select {
+      padding: 10px 14px;
+      border: 1px solid rgba(25, 50, 76, 0.16);
+      border-radius: 12px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--navy);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(231, 169, 21, 0.15);
+    }
+
+    .form-group small {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .batch-form-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-save-batch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--gold);
+      color: var(--navy-2);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(231, 169, 21, 0.25);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .btn-save-batch:hover {
+      background: var(--gold-2);
+      transform: translateY(-1px);
+    }
+
+    .save-feedback {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .save-feedback.success {
+      color: #059669;
+    }
+
+    .save-feedback.error {
+      color: #dc2626;
+    }
   </style>
 </head>
 <body>
@@ -562,7 +707,67 @@
             <small>Total Orders</small>
             <strong id="statTotalCount">0</strong>
           </div>
+      </div>
+
+      <!-- Manage Batch Dates Card -->
+      <div class="batch-admin-card">
+        <div class="batch-admin-header">
+          <div>
+            <h3><i class="fa-solid fa-calendar-pen text-gold"></i> Manage Workshop Batch Dates & Mode</h3>
+            <p>Update upcoming batch dates, class mode (Live on Zoom), timing and seat status shown on the public landing page.</p>
+          </div>
         </div>
+
+        <form id="batchSettingsForm" class="batch-admin-form">
+          <div class="batch-form-grid">
+            <div class="form-group">
+              <label for="inputBatchDates"><i class="fa-solid fa-calendar-days text-gold"></i> Batch Dates</label>
+              <input type="text" id="inputBatchDates" placeholder="e.g. Oct 3-4 (Sat-Sun)" required />
+              <small>Format example: Oct 3-4 (Sat-Sun) or Nov 14-15 (Sat-Sun)</small>
+            </div>
+
+            <div class="form-group">
+              <label for="inputBatchMonth"><i class="fa-solid fa-bookmark text-gold"></i> Batch Month / Title</label>
+              <input type="text" id="inputBatchMonth" placeholder="e.g. October 2026 Batch" required />
+              <small>e.g. October 2026 Batch</small>
+            </div>
+
+            <div class="form-group">
+              <label for="inputBatchMode"><i class="fa-solid fa-video text-gold"></i> Class Mode</label>
+              <input type="text" id="inputBatchMode" value="Live on Zoom" placeholder="e.g. Live on Zoom" required />
+              <small>Default: Live on Zoom</small>
+            </div>
+
+            <div class="form-group">
+              <label for="inputBatchTiming"><i class="fa-solid fa-clock text-gold"></i> Session Timing</label>
+              <input type="text" id="inputBatchTiming" placeholder="e.g. 7:00 PM - 9:00 PM IST" required />
+              <small>e.g. 7:00 PM - 9:00 PM IST</small>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="inputBatchSeats"><i class="fa-solid fa-bullhorn text-gold"></i> Seats / Status Note</label>
+              <input type="text" id="inputBatchSeats" placeholder="e.g. Seats filling fast! Reserve yours today." />
+              <small>Promotional note shown above join button</small>
+            </div>
+
+            <div class="form-group">
+              <label for="selectBatchStatus"><i class="fa-solid fa-tag text-gold"></i> Enrollment Status</label>
+              <select id="selectBatchStatus" class="select-filter" style="width: 100%;">
+                <option value="Enrollment Open" selected>Enrollment Open</option>
+                <option value="Few Seats Left">Few Seats Left</option>
+                <option value="Batch Filling Fast">Batch Filling Fast</option>
+                <option value="Registration Closing Soon">Registration Closing Soon</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="batch-form-actions">
+            <button type="submit" id="btnSaveBatch" class="btn-save-batch">
+              <i class="fa-solid fa-floppy-disk" id="saveBatchIcon"></i> Save Batch Dates
+            </button>
+            <span id="batchSaveFeedback" class="save-feedback"></span>
+          </div>
+        </form>
       </div>
 
       <!-- Table Container Card -->
@@ -655,9 +860,76 @@
         }
 
         await loadOrders();
+        await loadAdminBatchSettings();
       } catch (err) {
         console.error('Auth error:', err);
         window.location.replace('/admin-login.html');
+      }
+    }
+
+    async function loadAdminBatchSettings() {
+      try {
+        const res = await fetch('/api/batch-dates');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.batch) {
+          const b = data.batch;
+          document.getElementById('inputBatchDates').value = b.dates || '';
+          document.getElementById('inputBatchMonth').value = b.month || '';
+          document.getElementById('inputBatchMode').value = b.mode || 'Live on Zoom';
+          document.getElementById('inputBatchTiming').value = b.timing || '';
+          document.getElementById('inputBatchSeats').value = b.seatsText || '';
+          if (b.status) document.getElementById('selectBatchStatus').value = b.status;
+        }
+      } catch (err) {
+        console.warn('Could not load batch settings:', err);
+      }
+    }
+
+    async function handleBatchSave(e) {
+      e.preventDefault();
+      const saveBtn = document.getElementById('btnSaveBatch');
+      const saveIcon = document.getElementById('saveBatchIcon');
+      const feedback = document.getElementById('batchSaveFeedback');
+
+      saveBtn.disabled = true;
+      saveIcon.className = 'fa-solid fa-spinner fa-spin';
+      feedback.textContent = '';
+      feedback.className = 'save-feedback';
+
+      const payload = {
+        dates: document.getElementById('inputBatchDates').value,
+        month: document.getElementById('inputBatchMonth').value,
+        mode: document.getElementById('inputBatchMode').value,
+        timing: document.getElementById('inputBatchTiming').value,
+        seatsText: document.getElementById('inputBatchSeats').value,
+        status: document.getElementById('selectBatchStatus').value
+      };
+
+      try {
+        const res = await fetch('/api/admin/batch-dates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          feedback.textContent = '✓ Batch dates updated successfully!';
+          feedback.className = 'save-feedback success';
+          setTimeout(() => {
+            feedback.textContent = '';
+          }, 4000);
+        } else {
+          throw new Error(data.message || 'Failed to update batch dates');
+        }
+      } catch (err) {
+        feedback.textContent = `❌ ${err.message}`;
+        feedback.className = 'save-feedback error';
+      } finally {
+        saveBtn.disabled = false;
+        saveIcon.className = 'fa-solid fa-floppy-disk';
       }
     }
 
@@ -927,6 +1199,7 @@
 
     document.getElementById('statusFilter').addEventListener('change', renderOrders);
     document.getElementById('btnRefresh').addEventListener('click', loadOrders);
+    document.getElementById('batchSettingsForm').addEventListener('submit', handleBatchSave);
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {

@@ -286,3 +286,39 @@ if (marqueeWrapper) {
 
 handleLayout();
 window.addEventListener('resize', handleLayout);
+
+// 5. Dynamic Workshop Batch Dates & Mode Sync
+async function loadBatchSchedule() {
+  const datesEl = document.getElementById('batchDatesDisplay');
+  const monthEl = document.getElementById('batchMonthDisplay');
+  const modeEl = document.getElementById('batchModeDisplay');
+  const timingEl = document.getElementById('batchTimingDisplay');
+  const seatsEl = document.getElementById('batchSeatsDisplay');
+  const statusEl = document.getElementById('batchStatusDisplay');
+
+  if (!datesEl && !monthEl) return;
+
+  try {
+    const res = await fetch('/api/batch-dates');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && data.batch) {
+      const b = data.batch;
+      if (datesEl && b.dates) datesEl.textContent = b.dates;
+      if (monthEl && b.month) monthEl.textContent = b.month;
+      if (modeEl && b.mode) modeEl.textContent = b.mode;
+      if (timingEl && b.timing) timingEl.textContent = b.timing;
+      if (seatsEl && b.seatsText) seatsEl.textContent = b.seatsText;
+      if (statusEl && b.status) statusEl.textContent = b.status;
+    }
+  } catch (err) {
+    console.warn('Could not load dynamic batch dates:', err);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadBatchSchedule);
+} else {
+  loadBatchSchedule();
+}
+
