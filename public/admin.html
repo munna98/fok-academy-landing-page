@@ -141,10 +141,121 @@
       color: #5f6f81;
     }
 
+    .btn-nav-batch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(231, 169, 21, 0.12);
+      color: var(--navy);
+      border: 1px solid rgba(231, 169, 21, 0.4);
+      padding: 9px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(231, 169, 21, 0.12);
+    }
+
+    .btn-nav-batch:hover {
+      background: var(--gold);
+      color: var(--navy-2);
+      border-color: var(--gold);
+      box-shadow: 0 4px 14px rgba(231, 169, 21, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* Modal Dialog Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(14, 33, 53, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content-card {
+      background: white;
+      border: 1px solid rgba(231, 169, 21, 0.3);
+      border-radius: 28px;
+      width: min(720px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 32px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s ease;
+      position: relative;
+    }
+
+    .modal-overlay.active .modal-content-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(25, 50, 76, 0.08);
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-header p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: #5f6f81;
+    }
+
+    .modal-close-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      color: #64748b;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .modal-close-btn:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
     /* Summary Metric Cards */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
       margin-bottom: 32px;
     }
@@ -837,6 +948,9 @@
         </div>
 
         <div class="admin-user-bar">
+          <button id="btnOpenBatchModal" class="btn-nav-batch" type="button">
+            <i class="fa-solid fa-calendar-pen text-gold"></i> Manage Batch Dates
+          </button>
           <div class="admin-user-info">
             <i class="fa-solid fa-user-shield text-gold"></i>
             <span id="adminUserEmail">Admin</span>
@@ -896,6 +1010,7 @@
             <small>Total Orders</small>
             <strong id="statTotalCount">0</strong>
           </div>
+        </div>
       </div>
 
       <!-- Manage Batch Dates Card -->
@@ -1026,9 +1141,74 @@
               </tr>
             </tbody>
           </table>
-        </div>
       </div>
     </main>
+  </div>
+
+  <!-- Modal for Managing Workshop Batch Dates -->
+  <div id="batchModal" class="modal-overlay">
+    <div class="modal-content-card">
+      <div class="modal-header">
+        <div>
+          <h3><i class="fa-solid fa-calendar-pen text-gold"></i> Manage Workshop Batch Dates & Mode</h3>
+          <p>Update upcoming batch dates, class mode (Live on Zoom), timing and seat status shown on the public landing page.</p>
+        </div>
+        <button type="button" id="btnCloseBatchModal" class="modal-close-btn" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="modalBatchSettingsForm" class="batch-admin-form">
+        <div class="batch-form-grid">
+          <div class="form-group">
+            <label for="modalInputBatchDates"><i class="fa-solid fa-calendar-days text-gold"></i> Batch Dates</label>
+            <input type="text" id="modalInputBatchDates" placeholder="e.g. Oct 3-4 (Sat-Sun)" required />
+            <small>Format example: Oct 3-4 (Sat-Sun) or Nov 14-15 (Sat-Sun)</small>
+          </div>
+
+          <div class="form-group">
+            <label for="modalInputBatchMonth"><i class="fa-solid fa-bookmark text-gold"></i> Batch Month / Title</label>
+            <input type="text" id="modalInputBatchMonth" placeholder="e.g. October 2026 Batch" required />
+            <small>e.g. October 2026 Batch</small>
+          </div>
+
+          <div class="form-group">
+            <label for="modalInputBatchMode"><i class="fa-solid fa-video text-gold"></i> Class Mode</label>
+            <input type="text" id="modalInputBatchMode" value="Live on Zoom" placeholder="e.g. Live on Zoom" required />
+            <small>Default: Live on Zoom</small>
+          </div>
+
+          <div class="form-group">
+            <label for="modalInputBatchTiming"><i class="fa-solid fa-clock text-gold"></i> Session Timing</label>
+            <input type="text" id="modalInputBatchTiming" placeholder="e.g. 7:00 PM - 9:00 PM IST" required />
+            <small>e.g. 7:00 PM - 9:00 PM IST</small>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="modalInputBatchSeats"><i class="fa-solid fa-bullhorn text-gold"></i> Seats / Status Note</label>
+            <input type="text" id="modalInputBatchSeats" placeholder="e.g. Seats filling fast! Reserve yours today." />
+            <small>Promotional note shown above join button</small>
+          </div>
+
+          <div class="form-group">
+            <label for="modalSelectBatchStatus"><i class="fa-solid fa-tag text-gold"></i> Enrollment Status</label>
+            <select id="modalSelectBatchStatus" class="select-filter" style="width: 100%;">
+              <option value="Enrollment Open" selected>Enrollment Open</option>
+              <option value="Few Seats Left">Few Seats Left</option>
+              <option value="Batch Filling Fast">Batch Filling Fast</option>
+              <option value="Registration Closing Soon">Registration Closing Soon</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="batch-form-actions">
+          <button type="submit" id="btnModalSaveBatch" class="btn-save-batch">
+            <i class="fa-solid fa-floppy-disk" id="modalSaveBatchIcon"></i> Save Batch Dates
+          </button>
+          <span id="modalBatchSaveFeedback" class="save-feedback"></span>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -1056,44 +1236,43 @@
       }
     }
 
+    function syncBatchFormInputs(b) {
+      if (!b) return;
+      const fields = [
+        ['inputBatchDates', 'modalInputBatchDates', 'dates'],
+        ['inputBatchMonth', 'modalInputBatchMonth', 'month'],
+        ['inputBatchMode', 'modalInputBatchMode', 'mode'],
+        ['inputBatchTiming', 'modalInputBatchTiming', 'timing'],
+        ['inputBatchSeats', 'modalInputBatchSeats', 'seatsText'],
+        ['selectBatchStatus', 'modalSelectBatchStatus', 'status']
+      ];
+      fields.forEach(([inlineId, modalId, key]) => {
+        const inlineEl = document.getElementById(inlineId);
+        const modalEl = document.getElementById(modalId);
+        const val = b[key] || '';
+        if (inlineEl) inlineEl.value = val;
+        if (modalEl) modalEl.value = val;
+      });
+    }
+
     async function loadAdminBatchSettings() {
       try {
         const res = await fetch('/api/batch-dates');
         if (!res.ok) return;
         const data = await res.json();
         if (data.success && data.batch) {
-          const b = data.batch;
-          document.getElementById('inputBatchDates').value = b.dates || '';
-          document.getElementById('inputBatchMonth').value = b.month || '';
-          document.getElementById('inputBatchMode').value = b.mode || 'Live on Zoom';
-          document.getElementById('inputBatchTiming').value = b.timing || '';
-          document.getElementById('inputBatchSeats').value = b.seatsText || '';
-          if (b.status) document.getElementById('selectBatchStatus').value = b.status;
+          syncBatchFormInputs(data.batch);
         }
       } catch (err) {
         console.warn('Could not load batch settings:', err);
       }
     }
 
-    async function handleBatchSave(e) {
-      e.preventDefault();
-      const saveBtn = document.getElementById('btnSaveBatch');
-      const saveIcon = document.getElementById('saveBatchIcon');
-      const feedback = document.getElementById('batchSaveFeedback');
-
-      saveBtn.disabled = true;
-      saveIcon.className = 'fa-solid fa-spinner fa-spin';
-      feedback.textContent = '';
-      feedback.className = 'save-feedback';
-
-      const payload = {
-        dates: document.getElementById('inputBatchDates').value,
-        month: document.getElementById('inputBatchMonth').value,
-        mode: document.getElementById('inputBatchMode').value,
-        timing: document.getElementById('inputBatchTiming').value,
-        seatsText: document.getElementById('inputBatchSeats').value,
-        status: document.getElementById('selectBatchStatus').value
-      };
+    async function saveBatchData(payload, btnEl, iconEl, feedbackEl) {
+      btnEl.disabled = true;
+      iconEl.className = 'fa-solid fa-spinner fa-spin';
+      feedbackEl.textContent = '';
+      feedbackEl.className = 'save-feedback';
 
       try {
         const res = await fetch('/api/admin/batch-dates', {
@@ -1105,21 +1284,68 @@
 
         const data = await res.json();
         if (res.ok && data.success) {
-          feedback.textContent = '✓ Batch dates updated successfully!';
-          feedback.className = 'save-feedback success';
+          syncBatchFormInputs(data.batch);
+          feedbackEl.textContent = '✓ Batch dates updated successfully!';
+          feedbackEl.className = 'save-feedback success';
           setTimeout(() => {
-            feedback.textContent = '';
+            feedbackEl.textContent = '';
           }, 4000);
         } else {
           throw new Error(data.message || 'Failed to update batch dates');
         }
       } catch (err) {
-        feedback.textContent = `❌ ${err.message}`;
-        feedback.className = 'save-feedback error';
+        feedbackEl.textContent = `❌ ${err.message}`;
+        feedbackEl.className = 'save-feedback error';
       } finally {
-        saveBtn.disabled = false;
-        saveIcon.className = 'fa-solid fa-floppy-disk';
+        btnEl.disabled = false;
+        iconEl.className = 'fa-solid fa-floppy-disk';
       }
+    }
+
+    function handleInlineBatchSave(e) {
+      e.preventDefault();
+      const payload = {
+        dates: document.getElementById('inputBatchDates').value,
+        month: document.getElementById('inputBatchMonth').value,
+        mode: document.getElementById('inputBatchMode').value,
+        timing: document.getElementById('inputBatchTiming').value,
+        seatsText: document.getElementById('inputBatchSeats').value,
+        status: document.getElementById('selectBatchStatus').value
+      };
+      saveBatchData(
+        payload,
+        document.getElementById('btnSaveBatch'),
+        document.getElementById('saveBatchIcon'),
+        document.getElementById('batchSaveFeedback')
+      );
+    }
+
+    function handleModalBatchSave(e) {
+      e.preventDefault();
+      const payload = {
+        dates: document.getElementById('modalInputBatchDates').value,
+        month: document.getElementById('modalInputBatchMonth').value,
+        mode: document.getElementById('modalInputBatchMode').value,
+        timing: document.getElementById('modalInputBatchTiming').value,
+        seatsText: document.getElementById('modalInputBatchSeats').value,
+        status: document.getElementById('modalSelectBatchStatus').value
+      };
+      saveBatchData(
+        payload,
+        document.getElementById('btnModalSaveBatch'),
+        document.getElementById('modalSaveBatchIcon'),
+        document.getElementById('modalBatchSaveFeedback')
+      );
+    }
+
+    function openBatchModal() {
+      const modal = document.getElementById('batchModal');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeBatchModal() {
+      const modal = document.getElementById('batchModal');
+      if (modal) modal.classList.remove('active');
     }
 
     async function loadOrders() {
@@ -1388,7 +1614,17 @@
 
     document.getElementById('statusFilter').addEventListener('change', renderOrders);
     document.getElementById('btnRefresh').addEventListener('click', loadOrders);
-    document.getElementById('batchSettingsForm').addEventListener('submit', handleBatchSave);
+    
+    document.getElementById('batchSettingsForm').addEventListener('submit', handleInlineBatchSave);
+    document.getElementById('modalBatchSettingsForm').addEventListener('submit', handleModalBatchSave);
+    document.getElementById('btnOpenBatchModal').addEventListener('click', openBatchModal);
+    document.getElementById('btnCloseBatchModal').addEventListener('click', closeBatchModal);
+
+    document.getElementById('batchModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('batchModal')) {
+        closeBatchModal();
+      }
+    });
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
