@@ -1056,6 +1056,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/admin-batch', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-batch.html'));
+});
+
 // Fallback route to serve main landing page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
