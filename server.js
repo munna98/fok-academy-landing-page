@@ -39,6 +39,16 @@ app.use((req, res, next) => {
 // Serve static assets from public folder
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Clean page routes for legal policies and main views
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+app.get('/refund-policy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'refund-policy.html')));
+app.get('/refund', (req, res) => res.sendFile(path.join(__dirname, 'public', 'refund-policy.html')));
+app.get('/cancellation-policy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cancellation-policy.html')));
+app.get('/cancellation', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cancellation-policy.html')));
+app.get('/faq', (req, res) => res.sendFile(path.join(__dirname, 'public', 'faq.html')));
+app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public', 'checkout.html')));
+
 // In-memory order database for verification (In production, replace with DB like PostgreSQL/MongoDB)
 const ordersDB = new Map();
 
