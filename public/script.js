@@ -299,7 +299,7 @@ async function loadBatchSchedule() {
   if (!datesEl && !monthEl) return;
 
   try {
-    const res = await fetch('/api/batch-dates');
+    const res = await fetch('/api/batch-dates?_t=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) return;
     const data = await res.json();
     if (data.success && data.batch) {

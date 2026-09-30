@@ -513,7 +513,7 @@
               <strong id="prevMonth">October 2026 Batch</strong>
               <span class="preview-status" id="prevStatus">Enrollment Open</span>
             </div>
-            <h4>Upcoming 2-Day Live Masterclass</h4>
+            <h4>Upcoming 2-Day Amazon Seller Workshop</h4>
             <p>Join Naseef Neeruttichali live on Zoom for a step-by-step practical Amazon seller training.</p>
 
             <div class="preview-grid">
@@ -585,7 +585,7 @@
 
     async function loadBatchSettings() {
       try {
-        const res = await fetch('/api/batch-dates');
+        const res = await fetch('/api/batch-dates?_t=' + Date.now(), { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         if (data.success && data.batch) {

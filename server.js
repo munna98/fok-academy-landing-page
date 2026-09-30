@@ -42,8 +42,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // In-memory order database for verification (In production, replace with DB like PostgreSQL/MongoDB)
 const ordersDB = new Map();
 
+const os = require('os');
+
 // Persistent Workshop Batch Settings Storage
 const BATCH_FILE_PATH = path.join(__dirname, 'batch-settings.json');
+const TMP_BATCH_FILE_PATH = path.join(os.tmpdir(), 'fok-batch-settings.json');
 
 const DEFAULT_BATCH_SETTINGS = {
   dates: 'Oct 3-4 (Sat-Sun)',
@@ -57,33 +60,119 @@ const DEFAULT_BATCH_SETTINGS = {
 
 let inMemoryBatchSettings = null;
 
-const getBatchSettings = () => {
-  if (inMemoryBatchSettings) return inMemoryBatchSettings;
+const readLocalBatchFile = () => {
   try {
     if (fs.existsSync(BATCH_FILE_PATH)) {
       const data = fs.readFileSync(BATCH_FILE_PATH, 'utf8');
-      inMemoryBatchSettings = JSON.parse(data);
-      return inMemoryBatchSettings;
+      return JSON.parse(data);
     }
   } catch (err) {
-    console.warn('[Batch Settings Warning]: Could not read batch-settings.json:', err.message);
+    // Ignore error
   }
+  try {
+    if (fs.existsSync(TMP_BATCH_FILE_PATH)) {
+      const data = fs.readFileSync(TMP_BATCH_FILE_PATH, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    // Ignore error
+  }
+  return null;
+};
+
+const writeLocalBatchFile = (settings) => {
+  let written = false;
+  try {
+    fs.writeFileSync(BATCH_FILE_PATH, JSON.stringify(settings, null, 2), 'utf8');
+    written = true;
+  } catch (err) {
+    // On serverless (Vercel/AWS Lambda), BATCH_FILE_PATH is read-only.
+  }
+  try {
+    fs.writeFileSync(TMP_BATCH_FILE_PATH, JSON.stringify(settings, null, 2), 'utf8');
+    written = true;
+  } catch (err) {
+    // Ignore error
+  }
+  return written;
+};
+
+const toDbBatchSettings = (settings) => ({
+  id: 'default',
+  dates: settings.dates,
+  month: settings.month,
+  timing: settings.timing,
+  mode: settings.mode,
+  seats_text: settings.seatsText,
+  status: settings.status,
+  updated_at: settings.updatedAt || new Date().toISOString()
+});
+
+const fromDbBatchSettings = (row) => {
+  if (!row) return null;
+  return {
+    dates: row.dates || DEFAULT_BATCH_SETTINGS.dates,
+    month: row.month || DEFAULT_BATCH_SETTINGS.month,
+    timing: row.timing || DEFAULT_BATCH_SETTINGS.timing,
+    mode: row.mode || DEFAULT_BATCH_SETTINGS.mode,
+    seatsText: row.seats_text || DEFAULT_BATCH_SETTINGS.seatsText,
+    status: row.status || DEFAULT_BATCH_SETTINGS.status,
+    updatedAt: row.updated_at || new Date().toISOString()
+  };
+};
+
+const getBatchSettings = async () => {
+  if (inMemoryBatchSettings) return inMemoryBatchSettings;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const response = await axios.get(`${supabaseTableUrl('batch_settings')}?id=eq.default&select=*`, {
+        headers: supabaseHeaders(),
+        timeout: 5000
+      });
+      const dbSettings = fromDbBatchSettings(response.data?.[0]);
+      if (dbSettings) {
+        inMemoryBatchSettings = dbSettings;
+        writeLocalBatchFile(dbSettings);
+        return dbSettings;
+      }
+    } catch (err) {
+      console.warn('[Supabase Batch Settings Warning]:', err.response?.data || err.message);
+    }
+  }
+
+  const localSettings = readLocalBatchFile();
+  if (localSettings) {
+    inMemoryBatchSettings = localSettings;
+    return localSettings;
+  }
+
   inMemoryBatchSettings = { ...DEFAULT_BATCH_SETTINGS };
   return inMemoryBatchSettings;
 };
 
-const saveBatchSettings = (newSettings) => {
+const saveBatchSettings = async (newSettings) => {
+  const current = await getBatchSettings();
   const updated = {
-    ...getBatchSettings(),
+    ...current,
     ...newSettings,
     updatedAt: new Date().toISOString()
   };
   inMemoryBatchSettings = updated;
-  try {
-    fs.writeFileSync(BATCH_FILE_PATH, JSON.stringify(updated, null, 2), 'utf8');
-  } catch (err) {
-    console.error('[Batch Settings Error]: Could not write to batch-settings.json:', err.message);
+  writeLocalBatchFile(updated);
+
+  if (isSupabaseConfigured()) {
+    try {
+      await axios.post(`${supabaseTableUrl('batch_settings')}?on_conflict=id`, toDbBatchSettings(updated), {
+        headers: supabaseHeaders('resolution=merge-duplicates,return=representation'),
+        timeout: 5000
+      });
+      console.log('[Supabase Batch Settings Saved OK]');
+    } catch (err) {
+      console.error('[Supabase Save Batch Settings Error]:', err.response?.data || err.message);
+    }
   }
+
   return updated;
 };
 
@@ -172,8 +261,8 @@ const isSupabaseConfigured = () =>
 const isSupabaseAuthConfigured = () =>
   Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
 
-const supabaseTableUrl = () =>
-  `${process.env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/payment_orders`;
+const supabaseTableUrl = (table = 'payment_orders') =>
+  `${process.env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}`;
 
 const supabaseAuthUrl = (path) =>
   `${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1${path}`;
@@ -928,9 +1017,12 @@ app.get('/api/admin/orders', async (req, res) => {
  * GET /api/batch-dates
  * Public endpoint returning current workshop batch schedule
  */
-app.get('/api/batch-dates', (req, res) => {
+app.get('/api/batch-dates', async (req, res) => {
   try {
-    const batch = getBatchSettings();
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    const batch = await getBatchSettings();
     return res.json({
       success: true,
       batch
@@ -959,7 +1051,7 @@ app.post('/api/admin/batch-dates', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Batch dates and month are required.' });
     }
 
-    const updated = saveBatchSettings({
+    const updated = await saveBatchSettings({
       dates: String(dates).trim(),
       month: String(month).trim(),
       timing: String(timing || '7:00 PM - 9:00 PM IST').trim(),
