@@ -202,6 +202,13 @@ videoCards.forEach((card) => {
   const video = card.querySelector('video');
   if (!video) return;
 
+  // Ensure initial frame renders as thumbnail on mobile metadata load
+  video.addEventListener('loadedmetadata', () => {
+    if (video.paused && video.currentTime === 0) {
+      video.currentTime = 0.001;
+    }
+  });
+
   // Track video events to ensure correct icon state
   video.addEventListener('play', () => {
     card.classList.add('is-playing');
