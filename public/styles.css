@@ -1806,8 +1806,10 @@ a {
   opacity: 0;
 }
 
-.video-card.is-playing:hover .video-play-btn {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .video-card.is-playing:hover .video-play-btn {
+    opacity: 1;
+  }
 }
 
 /* Card Info Footer */
