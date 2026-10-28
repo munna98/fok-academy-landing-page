@@ -67,6 +67,7 @@ function updateCheckoutTimer() {
     if (checkoutPriceTag) checkoutPriceTag.textContent = "₹899";
     if (pricingNote) pricingNote.textContent = "Offer Expired. Current Price: ₹899";
     if (timerBannerLabel) timerBannerLabel.textContent = "₹499 Offer Expired";
+    updateSubmitButtonAmount();
   }
 }
 
@@ -80,8 +81,52 @@ const btnText = paySubmitBtn?.querySelector('.btn-text');
 const btnSpinner = paySubmitBtn?.querySelector('.btn-spinner');
 const formAlert = document.getElementById('formAlert');
 
+function getEffectivePlanAndAmount() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const rawParam = urlParams.get('amount') || urlParams.get('plan') || '';
+  const clean = rawParam.replace('tier_', '').trim();
+
+  const checkedRadio = document.querySelector('input[name="selected_amount"]:checked');
+  if (checkedRadio) {
+    const amt = checkedRadio.dataset.amount || checkedRadio.value.replace('tier_', '');
+    const plan = checkedRadio.value.startsWith('tier_') ? checkedRadio.value : `tier_${checkedRadio.value}`;
+    return { planId: plan, amount: amt };
+  }
+
+  if (clean === '999') {
+    return { planId: 'tier_999', amount: '999' };
+  }
+  if (clean === '899') {
+    return { planId: 'tier_899', amount: '899' };
+  }
+  if (clean === '499') {
+    if (isOfferExpired) {
+      return { planId: 'tier_899', amount: '899' };
+    }
+    return { planId: 'tier_499', amount: '499' };
+  }
+
+  if (isOfferExpired) {
+    return { planId: 'tier_899', amount: '899' };
+  }
+  return { planId: 'tier_499', amount: '499' };
+}
+
+function updateSubmitButtonAmount() {
+  const { amount } = getEffectivePlanAndAmount();
+  const paySubmitBtn = document.getElementById('paySubmitBtn');
+  const btnText = paySubmitBtn?.querySelector('.btn-text');
+  if (btnText) {
+    btnText.textContent = `Proceed to HDFC SmartGateway (₹${amount}) →`;
+  }
+}
+
+// Initial update immediately on script execution
+updateSubmitButtonAmount();
+
 // Sync Amount Selector Radios & URL Params
 document.addEventListener('DOMContentLoaded', () => {
+  updateSubmitButtonAmount();
   const urlParams = new URLSearchParams(window.location.search);
   const paramAmount = urlParams.get('amount');
   const amountRadios = document.querySelectorAll('input[name="selected_amount"]');
@@ -107,13 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    const checkedRadio = document.querySelector('input[name="selected_amount"]:checked');
-    const displayAmount = checkedRadio ? (checkedRadio.dataset.amount || checkedRadio.value.replace('tier_', '')) : '499';
-    const paySubmitBtn = document.getElementById('paySubmitBtn');
-    const btnText = paySubmitBtn?.querySelector('.btn-text');
-    if (btnText) {
-      btnText.textContent = `Proceed to HDFC SmartGateway (₹${displayAmount}) →`;
-    }
+    updateSubmitButtonAmount();
   }
 
   amountRadios.forEach((radio) => {
@@ -234,8 +273,7 @@ if (checkoutForm) {
     if (btnSpinner) btnSpinner.style.display = 'inline-block';
     if (paySubmitBtn) paySubmitBtn.disabled = true;
 
-    const selectedRadio = document.querySelector('input[name="selected_amount"]:checked');
-    const selectedPlan = selectedRadio ? selectedRadio.value : 'tier_499';
+    const { planId: selectedPlan } = getEffectivePlanAndAmount();
 
     try {
       // Step 1: Obtain tamper-proof HMAC-signed session token for the selected plan tier
