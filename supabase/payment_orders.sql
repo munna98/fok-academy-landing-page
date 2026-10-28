@@ -7,6 +7,9 @@ create table if not exists public.payment_orders (
   customer_name text,
   customer_email text,
   customer_phone text,
+  customer_country text,
+  customer_state text,
+  customer_district text,
   amount numeric(12,2) not null,
   currency text not null default 'INR',
   status text not null default 'PENDING',
@@ -20,6 +23,11 @@ create table if not exists public.payment_orders (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+-- Migration: add location columns if upgrading an existing database
+alter table public.payment_orders add column if not exists customer_country text;
+alter table public.payment_orders add column if not exists customer_state text;
+alter table public.payment_orders add column if not exists customer_district text;
 
 create unique index if not exists payment_orders_transaction_id_key
   on public.payment_orders (transaction_id)

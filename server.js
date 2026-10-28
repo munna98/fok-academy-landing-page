@@ -352,6 +352,9 @@ const toDbOrder = (order) => ({
   customer_name: order.customerName || null,
   customer_email: order.customerEmail || null,
   customer_phone: order.customerPhone || null,
+  customer_country: order.customerCountry || null,
+  customer_state: order.customerState || null,
+  customer_district: order.customerDistrict || null,
   amount: order.amount ?? null,
   currency: order.currency || 'INR',
   status: order.status || 'PENDING',
@@ -376,6 +379,9 @@ const fromDbOrder = (row) => {
     customerName: row.customer_name,
     customerEmail: row.customer_email,
     customerPhone: row.customer_phone,
+    customerCountry: row.customer_country || null,
+    customerState: row.customer_state || null,
+    customerDistrict: row.customer_district || null,
     amount: typeof row.amount === 'number' ? row.amount : parseFloat(row.amount || 0),
     currency: row.currency || 'INR',
     status: row.status || 'PENDING',
@@ -520,7 +526,7 @@ app.post('/api/initiate-checkout-session', (req, res) => {
  */
 app.post('/api/create-payment-order', async (req, res) => {
   try {
-    const { name, email, phone, isExpired, sessionToken } = req.body;
+    const { name, email, phone, country, state, district, isExpired, sessionToken } = req.body;
 
     if (!name || !email || !phone) {
       return res.status(400).json({
@@ -604,6 +610,9 @@ app.post('/api/create-payment-order', async (req, res) => {
       customerName: name,
       customerEmail: email,
       customerPhone: cleanPhone,
+      customerCountry: country || null,
+      customerState: state || null,
+      customerDistrict: district || null,
       customerId,
       amount,
       currency: 'INR',

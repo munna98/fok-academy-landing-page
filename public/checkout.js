@@ -121,6 +121,37 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   updateAmountCardStyles();
+
+  // Country / State / District conditional show-hide
+  const countrySelect = document.getElementById('studentCountry');
+  const stateSelect = document.getElementById('studentState');
+  const districtSelect = document.getElementById('studentDistrict');
+  const stateGroup = document.getElementById('stateGroup');
+  const districtGroup = document.getElementById('districtGroup');
+
+  if (countrySelect) {
+    countrySelect.addEventListener('change', () => {
+      const isIndia = countrySelect.value === 'India';
+      if (stateGroup) {
+        stateGroup.style.display = isIndia ? '' : 'none';
+        if (!isIndia && stateSelect) stateSelect.value = '';
+      }
+      if (districtGroup) {
+        districtGroup.style.display = 'none';
+        if (districtSelect) districtSelect.value = '';
+      }
+    });
+  }
+
+  if (stateSelect) {
+    stateSelect.addEventListener('change', () => {
+      const isKerala = stateSelect.value === 'Kerala';
+      if (districtGroup) {
+        districtGroup.style.display = isKerala ? '' : 'none';
+        if (!isKerala && districtSelect) districtSelect.value = '';
+      }
+    });
+  }
 });
 
 if (checkoutForm) {
@@ -167,6 +198,36 @@ if (checkoutForm) {
       isValid = false;
     }
 
+    // Location fields
+    const countryInput = document.getElementById('studentCountry');
+    const stateInput = document.getElementById('studentState');
+    const districtInput = document.getElementById('studentDistrict');
+    const countryErr = document.getElementById('countryError');
+    const stateErr = document.getElementById('stateError');
+    const districtErr = document.getElementById('districtError');
+
+    if (countryErr) countryErr.textContent = '';
+    if (stateErr) stateErr.textContent = '';
+    if (districtErr) districtErr.textContent = '';
+
+    const countryVal = countryInput?.value || '';
+    if (!countryVal) {
+      if (countryErr) countryErr.textContent = 'Please select your country.';
+      isValid = false;
+    }
+
+    const stateVal = (countryVal === 'India' && stateInput?.value) ? stateInput.value : '';
+    if (countryVal === 'India' && !stateVal) {
+      if (stateErr) stateErr.textContent = 'Please select your state.';
+      isValid = false;
+    }
+
+    const districtVal = (stateVal === 'Kerala' && districtInput?.value) ? districtInput.value : '';
+    if (stateVal === 'Kerala' && !districtVal) {
+      if (districtErr) districtErr.textContent = 'Please select your district.';
+      isValid = false;
+    }
+
     if (!isValid) return;
 
     if (btnText) btnText.style.display = 'none';
@@ -199,6 +260,9 @@ if (checkoutForm) {
           name: nameVal,
           email: emailVal,
           phone: `${countryCodeVal}${phoneVal}`,
+          country: countryVal,
+          state: stateVal || null,
+          district: districtVal || null,
           sessionToken: sessionData.sessionToken
         })
       });
