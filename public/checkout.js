@@ -212,7 +212,7 @@ if (checkoutForm) {
 
     const countryVal = countryInput?.value || '';
     if (!countryVal) {
-      if (countryErr) countryErr.textContent = 'Please select your country.';
+      if (countryErr) countryErr.textContent = 'Please select your present country.';
       isValid = false;
     }
 
