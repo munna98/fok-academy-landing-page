@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Manage Workshop Batch Dates & Schedule for FOK Academy." />
-  <title>Manage Batch Dates | FOK Academy Admin</title>
+  <title>Batch & WhatsApp Settings | FOK Academy Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
@@ -426,7 +426,7 @@
             <i class="fa-solid fa-list-check"></i> Orders Dashboard
           </a>
           <a href="admin-batch.html" class="btn-nav-batch">
-            <i class="fa-solid fa-calendar-pen"></i> Manage Batch Dates
+            <i class="fa-solid fa-gear"></i> Batch & WhatsApp Settings
           </a>
           <div class="admin-user-info">
             <i class="fa-solid fa-user-shield text-gold"></i>
@@ -442,8 +442,8 @@
     <main class="admin-main">
       <div class="dashboard-title-area">
         <div>
-          <h1>Manage Workshop Batch Dates & Mode</h1>
-          <p>Update upcoming batch dates, live zoom mode, session timings and promotional status notes shown on the public landing page.</p>
+          <h1>Manage Workshop Batch Dates & WhatsApp Community</h1>
+          <p>Update upcoming batch dates, live zoom schedule, and the official WhatsApp group link where students are directed after successful payment.</p>
         </div>
       </div>
 
@@ -490,6 +490,22 @@
                   <option value="Batch Filling Fast">Batch Filling Fast</option>
                   <option value="Registration Closing Soon">Registration Closing Soon</option>
                 </select>
+              </div>
+
+              <!-- Student WhatsApp Group Link Section -->
+              <div class="form-group full-width" style="background: rgba(37, 211, 102, 0.08); border: 1.5px solid rgba(37, 211, 102, 0.35); border-radius: 16px; padding: 18px 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <label for="inputBatchWhatsApp" style="margin: 0; font-size: 14.5px; font-weight: 800; color: #065f46; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-brands fa-whatsapp" style="font-size: 20px; color: #25d366;"></i> Student WhatsApp Group Link (Post-Payment)
+                  </label>
+                  <a id="btnTestWhatsAppLink" href="#" target="_blank" rel="noopener noreferrer" style="font-size: 12px; font-weight: 700; color: #059669; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Test Link
+                  </a>
+                </div>
+                <input type="url" id="inputBatchWhatsApp" placeholder="https://chat.whatsapp.com/..." required style="background: #ffffff; border-color: rgba(37, 211, 102, 0.5); font-weight: 600; color: var(--navy);" />
+                <small style="color: #047857; margin-top: 6px; display: block;">
+                  <i class="fa-solid fa-circle-info"></i> Students who successfully complete payment are automatically prompted to join this WhatsApp group for Live Zoom access and workshop materials.
+                </small>
               </div>
             </div>
 
@@ -540,6 +556,28 @@
               <strong style="color: var(--gold);">₹499 →</strong>
             </div>
           </div>
+
+          <!-- Live WhatsApp Group Card Preview -->
+          <div style="margin-top: 24px;">
+            <div class="preview-title" style="margin-bottom: 12px;">
+              <i class="fa-brands fa-whatsapp" style="color: #25d366;"></i> Post-Payment Student Screen Preview
+            </div>
+            <div style="background: #ffffff; border: 1.5px solid rgba(37, 211, 102, 0.4); border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(37, 211, 102, 0.08);">
+              <span style="background: #25d366; color: white; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 99px; text-transform: uppercase;">
+                <i class="fa-solid fa-bell"></i> ACTION REQUIRED: JOIN WORKSHOP GROUP
+              </span>
+              <h5 style="font-size: 16px; font-weight: 800; color: var(--navy); margin: 10px 0 6px;">Join Your Batch WhatsApp Group</h5>
+              <p style="font-size: 12px; color: #64748b; margin: 0 0 14px; line-height: 1.4;">
+                To receive the <strong>Live Zoom class access link</strong>, session reminders, and Amazon seller templates.
+              </p>
+              <div style="background: #25d366; color: white; font-size: 13.5px; font-weight: 800; padding: 12px 18px; border-radius: 99px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-brands fa-whatsapp" style="font-size: 18px;"></i> Join Student WhatsApp Group →
+              </div>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 8px; word-break: break-all;" id="prevWhatsAppUrl">
+                https://chat.whatsapp.com/...
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -581,6 +619,12 @@
       document.getElementById('prevTiming').textContent = timing;
       document.getElementById('prevSeats').textContent = seats;
       document.getElementById('prevStatus').textContent = status;
+
+      const whatsapp = document.getElementById('inputBatchWhatsApp')?.value || 'https://chat.whatsapp.com/LgVD87ZZnFwJGzhhFqiv1M?s=sh&p=a&mlu=4&ilr=4&iam=2';
+      const prevWa = document.getElementById('prevWhatsAppUrl');
+      if (prevWa) prevWa.textContent = whatsapp;
+      const testBtn = document.getElementById('btnTestWhatsAppLink');
+      if (testBtn) testBtn.href = whatsapp;
     }
 
     async function loadBatchSettings() {
@@ -596,6 +640,7 @@
           document.getElementById('inputBatchTiming').value = b.timing || '';
           document.getElementById('inputBatchSeats').value = b.seatsText || '';
           if (b.status) document.getElementById('selectBatchStatus').value = b.status;
+          document.getElementById('inputBatchWhatsApp').value = b.whatsappLink || 'https://chat.whatsapp.com/LgVD87ZZnFwJGzhhFqiv1M?s=sh&p=a&mlu=4&ilr=4&iam=2';
 
           updateLivePreview();
         }
@@ -621,7 +666,8 @@
         mode: document.getElementById('inputBatchMode').value.trim(),
         timing: document.getElementById('inputBatchTiming').value.trim(),
         seatsText: document.getElementById('inputBatchSeats').value.trim(),
-        status: document.getElementById('selectBatchStatus').value
+        status: document.getElementById('selectBatchStatus').value,
+        whatsappLink: document.getElementById('inputBatchWhatsApp').value.trim()
       };
 
       try {
@@ -652,7 +698,7 @@
       }
     }
 
-    ['inputBatchDates', 'inputBatchMonth', 'inputBatchMode', 'inputBatchTiming', 'inputBatchSeats', 'selectBatchStatus'].forEach(id => {
+    ['inputBatchDates', 'inputBatchMonth', 'inputBatchMode', 'inputBatchTiming', 'inputBatchSeats', 'selectBatchStatus', 'inputBatchWhatsApp'].forEach(id => {
       document.getElementById(id).addEventListener('input', updateLivePreview);
       document.getElementById(id).addEventListener('change', updateLivePreview);
     });

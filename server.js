@@ -65,6 +65,7 @@ const DEFAULT_BATCH_SETTINGS = {
   mode: 'Live on Zoom',
   seatsText: 'Seats filling fast! Reserve yours today.',
   status: 'Enrollment Open',
+  whatsappLink: 'https://chat.whatsapp.com/LgVD87ZZnFwJGzhhFqiv1M?s=sh&p=a&mlu=4&ilr=4&iam=2',
   updatedAt: new Date().toISOString()
 };
 
@@ -115,6 +116,7 @@ const toDbBatchSettings = (settings) => ({
   mode: settings.mode,
   seats_text: settings.seatsText,
   status: settings.status,
+  whatsapp_link: settings.whatsappLink || DEFAULT_BATCH_SETTINGS.whatsappLink,
   updated_at: settings.updatedAt || new Date().toISOString()
 });
 
@@ -127,6 +129,7 @@ const fromDbBatchSettings = (row) => {
     mode: row.mode || DEFAULT_BATCH_SETTINGS.mode,
     seatsText: row.seats_text || DEFAULT_BATCH_SETTINGS.seatsText,
     status: row.status || DEFAULT_BATCH_SETTINGS.status,
+    whatsappLink: row.whatsapp_link || DEFAULT_BATCH_SETTINGS.whatsappLink,
     updatedAt: row.updated_at || new Date().toISOString()
   };
 };
@@ -179,7 +182,20 @@ const saveBatchSettings = async (newSettings) => {
       });
       console.log('[Supabase Batch Settings Saved OK]');
     } catch (err) {
-      console.error('[Supabase Save Batch Settings Error]:', err.response?.data || err.message);
+      console.warn('[Supabase Save Batch Settings Error]:', err.response?.data || err.message);
+      if (err.response?.data?.message && (err.response.data.message.includes('whatsapp_link') || err.response.data.code === '42703')) {
+        try {
+          const fallbackData = { ...toDbBatchSettings(updated) };
+          delete fallbackData.whatsapp_link;
+          await axios.post(`${supabaseTableUrl('batch_settings')}?on_conflict=id`, fallbackData, {
+            headers: supabaseHeaders('resolution=merge-duplicates,return=representation'),
+            timeout: 5000
+          });
+          console.log('[Supabase Batch Settings Saved OK via fallback]');
+        } catch (innerErr) {
+          console.error('[Supabase Save Batch Settings Fallback Error]:', innerErr.response?.data || innerErr.message);
+        }
+      }
     }
   }
 
@@ -853,9 +869,11 @@ app.get('/api/verify-payment', async (req, res) => {
     order.verified = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(String(order.status).toUpperCase()) && Boolean(order.verified !== false);
     await saveOrder(order);
 
+    const batch = await getBatchSettings();
     const responsePayload = {
       success: true,
-      order
+      order,
+      whatsappLink: batch?.whatsappLink || DEFAULT_BATCH_SETTINGS.whatsappLink
     };
     console.log('[ORDER STATUS API RESPONSE]:', JSON.stringify(responsePayload, null, 2));
 
@@ -1007,13 +1025,33 @@ app.get('/api/admin/orders', async (req, res) => {
     }
 
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 250);
-    const response = await axios.get(
-      `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
-      {
-        headers: supabaseHeaders(),
-        timeout: 10000
+    let ordersList = [];
+
+    try {
+      // Query orders including customer location details (country, state, district)
+      const response = await axios.get(
+        `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,customer_country,customer_state,customer_district,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
+        {
+          headers: supabaseHeaders(),
+          timeout: 10000
+        }
+      );
+      ordersList = response.data || [];
+    } catch (dbErr) {
+      // Graceful fallback if location columns are not yet in Supabase schema
+      if (dbErr.response?.data?.message && (dbErr.response.data.message.includes('customer_country') || dbErr.response.data.code === '42703')) {
+        const fallbackRes = await axios.get(
+          `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
+          {
+            headers: supabaseHeaders(),
+            timeout: 10000
+          }
+        );
+        ordersList = fallbackRes.data || [];
+      } else {
+        throw dbErr;
       }
-    );
+    }
 
     return res.json({
       success: true,
@@ -1021,7 +1059,7 @@ app.get('/api/admin/orders', async (req, res) => {
         id: user.id,
         email: user.email
       },
-      orders: response.data || []
+      orders: ordersList
     });
   } catch (error) {
     console.error('[Admin Orders Error]:', error.response?.data || error.message);
@@ -1065,7 +1103,7 @@ app.post('/api/admin/batch-dates', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const { dates, month, timing, mode, seatsText, status } = req.body;
+    const { dates, month, timing, mode, seatsText, status, whatsappLink } = req.body;
     if (!dates || !month) {
       return res.status(400).json({ success: false, message: 'Batch dates and month are required.' });
     }
@@ -1076,7 +1114,8 @@ app.post('/api/admin/batch-dates', async (req, res) => {
       timing: String(timing || '7:00 PM - 9:00 PM IST').trim(),
       mode: String(mode || 'Live on Zoom').trim(),
       seatsText: String(seatsText || 'Seats filling fast! Reserve yours today.').trim(),
-      status: String(status || 'Enrollment Open').trim()
+      status: String(status || 'Enrollment Open').trim(),
+      whatsappLink: String(whatsappLink || '').trim() || DEFAULT_BATCH_SETTINGS.whatsappLink
     });
 
     console.log('[Admin Batch Updated]:', updated);
