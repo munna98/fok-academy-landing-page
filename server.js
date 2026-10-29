@@ -1024,7 +1024,7 @@ app.get('/api/admin/orders', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Supabase storage is not configured.' });
     }
 
-    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 250);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 500, 5000);
     let ordersList = [];
 
     try {

@@ -10,6 +10,14 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="styles.css" />
+  <script src="xlsx.full.min.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      document.head.appendChild(s);
+    }
+  </script>
   <style>
     body {
       min-height: 100vh;
@@ -365,6 +373,164 @@
       background: var(--navy-2);
     }
 
+    /* Excel Export Dropdown & Button */
+    .export-dropdown-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .btn-export-excel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #107c41;
+      color: white;
+      border: 1px solid #0e6b37;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(16, 124, 65, 0.18);
+      white-space: nowrap;
+    }
+
+    .btn-export-excel:hover {
+      background: #0d6334;
+      border-color: #0b532c;
+      box-shadow: 0 4px 14px rgba(16, 124, 65, 0.32);
+      transform: translateY(-1px);
+    }
+
+    .btn-export-excel:active {
+      transform: translateY(0);
+    }
+
+    .export-chevron {
+      font-size: 10px;
+      margin-left: 3px;
+      transition: transform 0.2s ease;
+    }
+
+    .export-dropdown-wrapper.open .export-chevron {
+      transform: rotate(180deg);
+    }
+
+    .export-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #ffffff;
+      border: 1px solid rgba(25, 50, 76, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14), 0 4px 12px rgba(15, 23, 42, 0.08);
+      width: 260px;
+      padding: 8px;
+      z-index: 250;
+      display: none;
+      animation: exportDropdownFade 0.15s ease-out;
+    }
+
+    .export-dropdown-wrapper.open .export-dropdown-menu {
+      display: block;
+    }
+
+    @keyframes exportDropdownFade {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .export-menu-item {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      transition: background 0.15s ease;
+      box-sizing: border-box;
+    }
+
+    .export-menu-item:hover {
+      background: #f1f5f9;
+    }
+
+    .export-menu-item:active {
+      background: #e2e8f0;
+    }
+
+    .export-item-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .export-item-title i {
+      color: #107c41;
+      font-size: 13px;
+      width: 16px;
+      text-align: center;
+    }
+
+    .export-item-desc {
+      font-size: 11px;
+      color: #64748b;
+      margin-left: 24px;
+    }
+
+    /* Admin Toast Notification */
+    .admin-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--navy);
+      color: white;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 9999;
+      transform: translateY(120%);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      max-width: calc(100vw - 48px);
+    }
+
+    .admin-toast.show {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .admin-toast.success i {
+      color: #10b981;
+      font-size: 16px;
+    }
+
+    .admin-toast.error i {
+      color: #ef4444;
+      font-size: 16px;
+    }
+
     /* Table Styles */
     .orders-table-wrap {
       overflow-x: auto;
@@ -565,9 +731,19 @@
         width: 100%;
       }
 
-      .select-filter, .btn-refresh {
+      .select-filter, .btn-refresh, .btn-export-excel {
         width: 100%;
         justify-content: center;
+      }
+
+      .export-dropdown-wrapper {
+        width: 100%;
+      }
+
+      .export-dropdown-menu {
+        left: 0;
+        right: 0;
+        width: 100%;
       }
     }
 
@@ -798,6 +974,30 @@
             <button id="btnRefresh" class="btn-refresh">
               <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Refresh
             </button>
+
+            <div class="export-dropdown-wrapper" id="exportDropdownWrapper">
+              <button id="btnExportExcel" class="btn-export-excel" type="button" title="Export orders to Excel (.xlsx)">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Export Excel</span>
+                <i class="fa-solid fa-chevron-down export-chevron"></i>
+              </button>
+              <div id="exportMenu" class="export-dropdown-menu">
+                <button type="button" class="export-menu-item" id="exportFilteredBtn">
+                  <div class="export-item-title">
+                    <i class="fa-solid fa-filter"></i>
+                    <span>Export Filtered (<strong id="filteredExportCount">0</strong>)</span>
+                  </div>
+                  <small class="export-item-desc">Matches active date, status & search</small>
+                </button>
+                <button type="button" class="export-menu-item" id="exportAllBtn">
+                  <div class="export-item-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Export All (<strong id="allExportCount">0</strong>)</span>
+                  </div>
+                  <small class="export-item-desc">All loaded orders in history</small>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -861,7 +1061,7 @@
       refreshBtn.disabled = true;
 
       try {
-        const res = await fetch('/api/admin/orders?limit=200', { credentials: 'include' });
+        const res = await fetch('/api/admin/orders?limit=1000', { credentials: 'include' });
         const resContentType = res.headers.get('content-type') || '';
         if (!res.ok || !resContentType.includes('application/json')) throw new Error('Failed to load orders');
 
@@ -987,12 +1187,12 @@
       return { start, end };
     }
 
-    function renderOrders() {
+    function getFilteredOrders() {
       const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const selectedStatus = document.getElementById('statusFilter').value;
       const bounds = getActiveDateBounds();
 
-      const filtered = rawOrders.filter(o => {
+      return rawOrders.filter(o => {
         // Date range check
         if (bounds) {
           if (!o.created_at) return false;
@@ -1027,6 +1227,169 @@
 
         return matchesQuery && matchesStatus;
       });
+    }
+
+    function updateExportCounts(filteredCount) {
+      const filteredEl = document.getElementById('filteredExportCount');
+      const allEl = document.getElementById('allExportCount');
+      if (filteredEl) filteredEl.textContent = filteredCount !== undefined ? filteredCount : getFilteredOrders().length;
+      if (allEl) allEl.textContent = rawOrders.length;
+    }
+
+    let toastTimeout = null;
+    function showToast(type, msg) {
+      const toast = document.getElementById('adminToast');
+      const icon = document.getElementById('adminToastIcon');
+      const label = document.getElementById('adminToastMsg');
+      if (!toast || !icon || !label) return;
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+
+      toast.className = 'admin-toast ' + (type === 'error' ? 'error' : 'success');
+      icon.className = type === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check';
+      label.textContent = msg;
+
+      toast.classList.add('show');
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+
+    function downloadExcelWorkbook(wb, filename) {
+      try {
+        if (typeof XLSX !== 'undefined' && typeof XLSX.writeFile === 'function') {
+          XLSX.writeFile(wb, filename);
+          return;
+        }
+      } catch (err) {
+        console.warn('XLSX.writeFile encountered an issue, trying Blob download fallback:', err);
+      }
+
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 200);
+    }
+
+    function exportOrdersToExcel(ordersToExport, filenamePrefix) {
+      if (!ordersToExport || ordersToExport.length === 0) {
+        showToast('error', 'No orders available to export for this selection.');
+        return;
+      }
+
+      if (typeof XLSX === 'undefined') {
+        showToast('error', 'Excel export library is still loading. Please try again in a moment.');
+        return;
+      }
+
+      try {
+        const exportData = ordersToExport.map((o, idx) => {
+          const isPaid = o.status === 'CHARGED' || o.status === 'SUCCESS' || o.verified;
+          const statusLabel = isPaid ? 'PAID' : (o.status || 'PENDING');
+
+          let dateFormatted = '';
+          if (o.created_at) {
+            try {
+              const d = new Date(o.created_at);
+              if (!isNaN(d.getTime())) {
+                dateFormatted = d.toLocaleString('en-IN', {
+                  day: '2-digit', month: 'short', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit', second: '2-digit',
+                  hour12: true
+                });
+              }
+            } catch (e) {
+              dateFormatted = String(o.created_at);
+            }
+          }
+
+          let paidAtFormatted = '';
+          if (o.paid_at) {
+            try {
+              const pd = new Date(o.paid_at);
+              if (!isNaN(pd.getTime())) {
+                paidAtFormatted = pd.toLocaleString('en-IN', {
+                  day: '2-digit', month: 'short', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit', second: '2-digit',
+                  hour12: true
+                });
+              }
+            } catch (e) {
+              paidAtFormatted = String(o.paid_at);
+            }
+          }
+
+          const amountNum = parseFloat(o.amount || 0);
+
+          return {
+            'Sl No': idx + 1,
+            'Order ID': o.order_id || 'N/A',
+            'Date & Time': dateFormatted,
+            'Customer Name': o.customer_name || 'Guest User',
+            'Email': o.customer_email || '',
+            'Phone': o.customer_phone || '',
+            'Country': o.customer_country || o.customerCountry || '',
+            'State': o.customer_state || o.customerState || '',
+            'District / City': o.customer_district || o.customerDistrict || '',
+            'Amount (INR)': isNaN(amountNum) ? 0 : amountNum,
+            'Currency': o.currency || 'INR',
+            'Payment Status': statusLabel,
+            'Verification Source': o.verification_source || 'direct',
+            'Transaction ID': o.transaction_id || 'Pending',
+            'Payment Method': o.payment_method_type || 'N/A',
+            'Paid At': paidAtFormatted
+          };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Auto-fit column widths based on cell content
+        const keys = Object.keys(exportData[0] || {});
+        const colWidths = keys.map(key => {
+          let maxLen = key.length;
+          exportData.forEach(row => {
+            const val = row[key] != null ? String(row[key]) : '';
+            if (val.length > maxLen) maxLen = val.length;
+          });
+          return { wch: Math.min(Math.max(maxLen + 3, 10), 45) };
+        });
+        ws['!cols'] = colWidths;
+
+        // Auto-filter on header row
+        if (ws['!ref']) {
+          ws['!autofilter'] = { ref: ws['!ref'] };
+        }
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const dateStamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+        const filename = `${filenamePrefix || 'FOK_Orders'}_${dateStamp}.xlsx`;
+
+        downloadExcelWorkbook(wb, filename);
+
+        showToast('success', `Exported ${exportData.length} order${exportData.length === 1 ? '' : 's'} to ${filename}`);
+      } catch (err) {
+        console.error('Export failed:', err);
+        showToast('error', 'Export failed: ' + (err.message || 'Unknown error'));
+      }
+    }
+
+    function renderOrders() {
+      const bounds = getActiveDateBounds();
+      const filtered = getFilteredOrders();
+
+      updateExportCounts(filtered.length);
 
       // Recalculate metrics for date range
       const dateFilteredOrders = bounds ? rawOrders.filter(o => {
@@ -1154,10 +1517,62 @@
       window.location.replace('/admin-login.html');
     });
 
+    // Export Dropdown & Action Listeners
+    const exportWrapper = document.getElementById('exportDropdownWrapper');
+    const btnExportExcel = document.getElementById('btnExportExcel');
+    const exportFilteredBtn = document.getElementById('exportFilteredBtn');
+    const exportAllBtn = document.getElementById('exportAllBtn');
+
+    if (btnExportExcel && exportWrapper) {
+      btnExportExcel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        exportWrapper.classList.toggle('open');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!exportWrapper.contains(e.target)) {
+          exportWrapper.classList.remove('open');
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          exportWrapper.classList.remove('open');
+        }
+      });
+    }
+
+    if (exportFilteredBtn) {
+      exportFilteredBtn.addEventListener('click', () => {
+        if (exportWrapper) exportWrapper.classList.remove('open');
+        const filtered = getFilteredOrders();
+        if (filtered.length === 0) {
+          showToast('error', 'No orders match current filters to export.');
+          return;
+        }
+        exportOrdersToExcel(filtered, 'FOK_Orders_Filtered');
+      });
+    }
+
+    if (exportAllBtn) {
+      exportAllBtn.addEventListener('click', () => {
+        if (exportWrapper) exportWrapper.classList.remove('open');
+        if (!rawOrders || rawOrders.length === 0) {
+          showToast('error', 'No orders currently loaded to export.');
+          return;
+        }
+        exportOrdersToExcel(rawOrders, 'FOK_Orders_All');
+      });
+    }
+
     // Initialize default date preset (Today)
     syncDateInputsFromPreset('TODAY');
 
     checkAuthAndFetch();
   </script>
+  <div id="adminToast" class="admin-toast">
+    <i class="fa-solid fa-circle-check" id="adminToastIcon"></i>
+    <span id="adminToastMsg">Notification</span>
+  </div>
 </body>
 </html>
