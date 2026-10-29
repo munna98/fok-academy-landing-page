@@ -758,32 +758,7 @@
         </div>
       </div>
 
-      <!-- Active Post-Payment WhatsApp Group Integration Card -->
-      <div class="whatsapp-admin-strip" style="background: white; border: 1.5px solid rgba(37, 211, 102, 0.3); border-radius: 20px; padding: 18px 24px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; box-shadow: 0 6px 24px rgba(37, 211, 102, 0.07);">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(37, 211, 102, 0.12); color: #25d366; display: grid; place-items: center; font-size: 24px; flex-shrink: 0;">
-            <i class="fa-brands fa-whatsapp"></i>
-          </div>
-          <div>
-            <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #059669; display: flex; align-items: center; gap: 6px;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #25d366; display: inline-block;"></span> Active Post-Payment Student WhatsApp Group
-            </div>
-            <div style="font-size: 14px; font-weight: 700; color: var(--navy); margin-top: 3px; word-break: break-all;" id="adminActiveWhatsAppUrl">
-              Loading active group link...
-            </div>
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <a id="btnTestWhatsAppDashboard" href="#" target="_blank" rel="noopener noreferrer" style="font-size: 13px; font-weight: 700; color: #059669; padding: 8px 16px; border-radius: 10px; background: rgba(37, 211, 102, 0.1); border: 1px solid rgba(37, 211, 102, 0.25); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i> Test Link
-          </a>
-          <a href="admin-batch.html" style="font-size: 13px; font-weight: 800; color: #ffffff; background: #25d366; padding: 8px 18px; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);">
-            <i class="fa-solid fa-pen-to-square"></i> Change Link
-          </a>
-        </div>
-      </div>
-
-      <!-- Table Container Card -->
+<!-- Table Container Card -->
       <div class="table-container-card">
         <div class="table-toolbar">
           <div class="search-box">
@@ -872,27 +847,10 @@
         if (meData.user?.email) {
           document.getElementById('adminUserEmail').textContent = meData.user.email;
         }
-
-        loadActiveWhatsAppBanner();
         await loadOrders();
       } catch (err) {
         console.error('Auth error:', err);
         window.location.replace('/admin-login.html');
-      }
-    }
-
-    async function loadActiveWhatsAppBanner() {
-      try {
-        const res = await fetch('/api/batch-dates?_t=' + Date.now(), { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        const waLink = data?.batch?.whatsappLink || 'https://chat.whatsapp.com/LgVD87ZZnFwJGzhhFqiv1M?s=sh&p=a&mlu=4&ilr=4&iam=2';
-        const urlEl = document.getElementById('adminActiveWhatsAppUrl');
-        const btnEl = document.getElementById('btnTestWhatsAppDashboard');
-        if (urlEl) urlEl.textContent = waLink;
-        if (btnEl) btnEl.href = waLink;
-      } catch (e) {
-        console.warn('Could not load active WhatsApp link for dashboard:', e);
       }
     }
 
