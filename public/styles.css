@@ -1692,7 +1692,7 @@ a {
   gap: 24px;
   width: max-content;
   will-change: transform;
-  animation: marqueeScroll 38s linear infinite;
+  animation: marqueeScroll 45s linear infinite;
 }
 
 .video-marquee-track:hover {
