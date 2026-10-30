@@ -171,34 +171,31 @@ const saveBatchSettings = async (newSettings) => {
     ...newSettings,
     updatedAt: new Date().toISOString()
   };
-  inMemoryBatchSettings = updated;
-  writeLocalBatchFile(updated);
 
   if (isSupabaseConfigured()) {
     try {
-      await axios.post(`${supabaseTableUrl('batch_settings')}?on_conflict=id`, toDbBatchSettings(updated), {
+      const response = await axios.post(`${supabaseTableUrl('batch_settings')}?on_conflict=id`, toDbBatchSettings(updated), {
         headers: supabaseHeaders('resolution=merge-duplicates,return=representation'),
         timeout: 5000
       });
+      const savedSettings = fromDbBatchSettings(response.data?.[0]);
+      if (!savedSettings) {
+        throw new Error('Supabase did not return the saved batch settings.');
+      }
+      inMemoryBatchSettings = savedSettings;
+      writeLocalBatchFile(savedSettings);
       console.log('[Supabase Batch Settings Saved OK]');
+      return savedSettings;
     } catch (err) {
       console.warn('[Supabase Save Batch Settings Error]:', err.response?.data || err.message);
-      if (err.response?.data?.message && (err.response.data.message.includes('whatsapp_link') || err.response.data.code === '42703')) {
-        try {
-          const fallbackData = { ...toDbBatchSettings(updated) };
-          delete fallbackData.whatsapp_link;
-          await axios.post(`${supabaseTableUrl('batch_settings')}?on_conflict=id`, fallbackData, {
-            headers: supabaseHeaders('resolution=merge-duplicates,return=representation'),
-            timeout: 5000
-          });
-          console.log('[Supabase Batch Settings Saved OK via fallback]');
-        } catch (innerErr) {
-          console.error('[Supabase Save Batch Settings Fallback Error]:', innerErr.response?.data || innerErr.message);
-        }
-      }
+      throw new Error('Batch settings could not be saved to Supabase. Check the batch_settings table, its columns, and service role permissions.');
     }
   }
 
+  if (!writeLocalBatchFile(updated)) {
+    throw new Error('Batch settings could not be saved to local storage. Configure Supabase for persistent storage.');
+  }
+  inMemoryBatchSettings = updated;
   return updated;
 };
 
@@ -1126,7 +1123,10 @@ app.post('/api/admin/batch-dates', async (req, res) => {
     });
   } catch (error) {
     console.error('[Admin Batch Error]:', error.message);
-    return res.status(500).json({ success: false, message: 'Failed to update batch dates.' });
+    return res.status(503).json({
+      success: false,
+      message: error.message || 'Failed to update batch dates.'
+    });
   }
 });
 

@@ -680,6 +680,14 @@
 
         const data = await res.json();
         if (res.ok && data.success) {
+          const saved = data.batch || payload;
+          document.getElementById('inputBatchDates').value = saved.dates || '';
+          document.getElementById('inputBatchMonth').value = saved.month || '';
+          document.getElementById('inputBatchMode').value = saved.mode || '';
+          document.getElementById('inputBatchTiming').value = saved.timing || '';
+          document.getElementById('inputBatchSeats').value = saved.seatsText || '';
+          document.getElementById('selectBatchStatus').value = saved.status || 'Enrollment Open';
+          document.getElementById('inputBatchWhatsApp').value = saved.whatsappLink || '';
           feedback.textContent = '✓ Batch dates updated successfully!';
           feedback.className = 'save-feedback success';
           updateLivePreview();
