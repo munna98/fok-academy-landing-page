@@ -20,3 +20,6 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Large media files (hosted externally on Cloudflare R2)
+public/videos/
