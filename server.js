@@ -135,8 +135,9 @@ const fromDbBatchSettings = (row) => {
 };
 
 const getBatchSettings = async () => {
-  if (inMemoryBatchSettings) return inMemoryBatchSettings;
-
+  // In serverless deployments, POST and GET requests can run in different
+  // warm instances. Always read Supabase when available so the public page
+  // cannot remain stuck on an instance's old in-memory settings.
   if (isSupabaseConfigured()) {
     try {
       const response = await axios.get(`${supabaseTableUrl('batch_settings')}?id=eq.default&select=*`, {
@@ -153,6 +154,8 @@ const getBatchSettings = async () => {
       console.warn('[Supabase Batch Settings Warning]:', err.response?.data || err.message);
     }
   }
+
+  if (inMemoryBatchSettings) return inMemoryBatchSettings;
 
   const localSettings = readLocalBatchFile();
   if (localSettings) {
