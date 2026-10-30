@@ -55,14 +55,24 @@ function updateCheckoutTimer() {
   const ss = String(seconds).padStart(2, "0");
   const timeString = `${mm}:${ss}`;
 
-  if (topCountdown) topCountdown.textContent = timeString;
+  if (topCountdown) {
+    topCountdown.textContent = timeString;
+    topCountdown.style.display = "";
+  }
   if (checkoutClock) checkoutClock.textContent = timeString;
 
   if (remaining <= 0) {
     isOfferExpired = true;
     if (timer) clearInterval(timer);
 
-    if (topCountdown) topCountdown.textContent = "EXPIRED";
+    const announcementText = document.querySelector(".announcement .announcement-text");
+    if (announcementText) {
+      announcementText.innerHTML = '<i class="fa-solid fa-clock text-gold"></i> INTRODUCTORY OFFER HAS ENDED';
+    }
+    if (topCountdown) {
+      topCountdown.textContent = "";
+      topCountdown.style.display = "none";
+    }
     if (checkoutClock) checkoutClock.textContent = "00:00";
     if (checkoutPriceTag) checkoutPriceTag.textContent = "₹899";
     if (pricingNote) pricingNote.textContent = "Offer Expired. Current Price: ₹899";

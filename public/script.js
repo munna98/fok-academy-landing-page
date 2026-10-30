@@ -60,7 +60,10 @@ function updateCountdown() {
   const mm = String(minutes).padStart(2, "0");
   const ss = String(seconds).padStart(2, "0");
 
-  if (topCountdown) topCountdown.textContent = `${mm}:${ss}`;
+  if (topCountdown) {
+    topCountdown.textContent = `${mm}:${ss}`;
+    topCountdown.style.display = "";
+  }
   if (minutesEl) minutesEl.textContent = mm;
   if (secondsEl) secondsEl.textContent = ss;
 
@@ -68,18 +71,58 @@ function updateCountdown() {
     isOfferExpired = true;
     if (timer) clearInterval(timer);
 
-    if (topCountdown) topCountdown.textContent = "EXPIRED";
+    // 1. Update Top Announcement Bar cleanly (remove "ENDS IN EXPIRED" & update CTA)
+    const announcementText = document.querySelector(".announcement .announcement-text");
+    const announcementBtn = document.querySelector(".announcement .announcement-btn");
+
+    if (announcementText) {
+      announcementText.innerHTML = '<i class="fa-solid fa-clock text-gold"></i> INTRODUCTORY OFFER HAS ENDED';
+    }
+    if (topCountdown) {
+      topCountdown.textContent = "";
+      topCountdown.style.display = "none";
+    }
+    if (announcementBtn) {
+      announcementBtn.textContent = "Enroll for ₹899 →";
+      announcementBtn.href = "checkout.html?amount=899";
+    }
+
+    // 2. Update Pricing Section
     if (minutesEl) minutesEl.textContent = "00";
     if (secondsEl) secondsEl.textContent = "00";
 
     if (priceEl) priceEl.innerHTML = '₹899 <small>one time</small>';
     if (statusEl) statusEl.textContent = "The ₹499 introductory offer has expired. Current price: ₹899.";
-    if (enrollButton) enrollButton.textContent = "Enroll for ₹899 →";
+    if (enrollButton) {
+      enrollButton.textContent = "Enroll for ₹899 →";
+      enrollButton.href = "checkout.html?amount=899";
+    }
     if (priceCard) priceCard.classList.add("expired");
 
+    // 3. Update all page CTAs that referenced ₹499 to ₹899
+    const batchJoinBtn = document.querySelector(".batch-join-btn");
+    if (batchJoinBtn) {
+      batchJoinBtn.innerHTML = 'Join Workshop — ₹899 <i class="fa-solid fa-arrow-right"></i>';
+      batchJoinBtn.href = "checkout.html?amount=899";
+    }
+
+    const finalCtaBtn = document.querySelector(".final-cta .btn-gold");
+    if (finalCtaBtn) {
+      finalCtaBtn.textContent = "Join the Amazon Seller Workshop — ₹899 →";
+      finalCtaBtn.href = "checkout.html?amount=899";
+    }
+
+    document.querySelectorAll('.faq-grid a[href*="checkout.html"]').forEach(btn => {
+      btn.textContent = "Join Workshop — ₹899 →";
+      btn.href = "checkout.html?amount=899";
+    });
+
+    // 4. Update Mobile Sticky CTA
     if (mobileStickyCta) {
       const priceText = mobileStickyCta.querySelector(".mobile-cta-info span");
       if (priceText) priceText.innerHTML = "₹899";
+      const mobileBtn = mobileStickyCta.querySelector("a.btn");
+      if (mobileBtn) mobileBtn.href = "checkout.html?amount=899";
     }
   }
 }
