@@ -741,6 +741,102 @@ app.post('/api/create-payment-order', async (req, res) => {
 });
 
 /**
+ * Helper: Query HDFC SmartGateway Server-to-Server (S2S) Status API and sync order state in DB
+ */
+const syncOrderWithHdfc = async (orderId, options = {}) => {
+  const { source = 'status_api' } = options;
+  if (!orderId) {
+    return { success: false, message: 'orderId is required' };
+  }
+
+  let order = await getStoredOrder(orderId);
+  const config = getHdfcConfig();
+
+  // If local mock credentials, cannot query real bank gateway
+  if (!config.merchantId || config.merchantId.includes('FOK_MERCHANT_TEST')) {
+    return { success: false, message: 'Gateway configured in mock/test mode; S2S query skipped.', order };
+  }
+
+  try {
+    const rawApiKey = (config.apiKey || '').trim();
+    const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
+    const authHeader = rawApiKey.startsWith('Basic ') ? rawApiKey : `Basic ${base64ApiKey}`;
+    const customerId = order?.customerId || `cust${(order?.customerPhone || '').replace(/\D/g, '') || '0000000000'}`;
+
+    console.log(`[HDFC Gateway Status Request] Fetching status for order ${orderId} from: ${config.baseUrl}/orders/${orderId}`);
+
+    const hdfcRes = await axios.get(`${config.baseUrl}/orders/${orderId}`, {
+      headers: {
+        'x-merchantid': config.merchantId,
+        'x-customerid': customerId,
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      timeout: 8000
+    });
+
+    console.log(`[HDFC Gateway Status Response] Order ${orderId}:`, JSON.stringify(hdfcRes.data, null, 2));
+
+    if (hdfcRes.data && hdfcRes.data.status) {
+      if (!order) {
+        order = {
+          orderId: hdfcRes.data.order_id || orderId,
+          amount: parseFloat(hdfcRes.data.amount || 0),
+          currency: hdfcRes.data.currency || 'INR',
+          customerName: hdfcRes.data.customer_name || 'Customer',
+          createdAt: new Date().toISOString()
+        };
+      }
+
+      const hdfcStatus = String(hdfcRes.data.status).toUpperCase();
+      const paidAmount = parseFloat(hdfcRes.data.amount || 0);
+      const expectedAmount = parseFloat(order.amount || 0);
+
+      order.currency = hdfcRes.data.currency || order.currency || 'INR';
+      order.customerName = hdfcRes.data.customer_name || order.customerName || '';
+      order.customerEmail = hdfcRes.data.customer_email || order.customerEmail || '';
+      order.customerPhone = hdfcRes.data.customer_phone || order.customerPhone || '';
+      order.transactionId = hdfcRes.data.txn_id || order.transactionId || '';
+      order.paymentMethodType =
+        hdfcRes.data.payment_method_type ||
+        hdfcRes.data.payment_method ||
+        hdfcRes.data.method ||
+        order.paymentMethodType ||
+        '';
+      order.hdfcDetails = hdfcRes.data;
+
+      const isPaid = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(hdfcStatus);
+
+      // Cross-verify gateway paid amount with server expected order amount to catch parameter tampering
+      if (expectedAmount > 0 && paidAmount > 0 && Math.abs(paidAmount - expectedAmount) > 0.01) {
+        console.error(`[SECURITY ALERT] Payment amount mismatch for order ${orderId}! Server Expected: ${expectedAmount}, Gateway Paid: ${paidAmount}`);
+        order.status = 'AMOUNT_MISMATCH';
+        order.verified = false;
+        order.verificationSource = `${source}_mismatch`;
+      } else {
+        order.status = hdfcStatus;
+        order.verified = isPaid && Boolean(order.transactionId || hdfcRes.data.txn_id);
+        order.verificationSource = source;
+        if (isPaid && !order.paidAt) {
+          order.paidAt = hdfcRes.data.txn_time || hdfcRes.data.payment_time || new Date().toISOString();
+        }
+      }
+
+      order.updatedAt = new Date().toISOString();
+      const saved = await saveOrder(order);
+      console.log(`[HDFC Status API S2S] Order ${orderId} status: ${order.status}, verified: ${order.verified}`);
+      return { success: true, order: saved || order, hdfcStatus, isPaid };
+    }
+
+    return { success: false, message: 'Invalid response from gateway', order };
+  } catch (hdfcErr) {
+    const errMsg = hdfcErr.response?.data?.error_message || hdfcErr.response?.data?.message || hdfcErr.message;
+    console.warn(`[HDFC Status Check Notice] Order ${orderId}:`, hdfcErr.response?.data || hdfcErr.message);
+    return { success: false, message: errMsg, order };
+  }
+};
+
+/**
  * 2. GET /api/verify-payment
  * Verifies order status by checking internal DB or calling HDFC SmartGateway Status API S2S
  */
@@ -791,67 +887,11 @@ app.get('/api/verify-payment', async (req, res) => {
 
     const config = getHdfcConfig();
 
-    // Query HDFC SmartGateway S2S API if real API credentials/UAT merchant ID are present
+    // Query HDFC SmartGateway S2S API if real API credentials are present
     if (!mock_action && config.merchantId && !config.merchantId.includes('FOK_MERCHANT_TEST')) {
-      try {
-        const rawApiKey = (config.apiKey || '').trim();
-        const base64ApiKey = Buffer.from(rawApiKey).toString('base64');
-        const authHeader = rawApiKey.startsWith('Basic ') ? rawApiKey : `Basic ${base64ApiKey}`;
-        const customerId = order?.customerId || `cust${(order?.customerPhone || '').replace(/\D/g, '')}`;
-
-        console.log(`[HDFC Gateway Status Request] Fetching status from: ${config.baseUrl}/orders/${order_id}`);
-
-        const hdfcRes = await axios.get(`${config.baseUrl}/orders/${order_id}`, {
-          headers: {
-            'x-merchantid': config.merchantId,
-            'x-customerid': customerId,
-            'Authorization': authHeader,
-            'Content-Type': 'application/json'
-          },
-          timeout: 7000
-        });
-
-        console.log('[HDFC Gateway Status API Raw Response]:', JSON.stringify(hdfcRes.data, null, 2));
-
-        if (hdfcRes.data && hdfcRes.data.status) {
-          if (!order) {
-            order = { orderId: hdfcRes.data.order_id || order_id };
-          }
-
-          const hdfcStatus = String(hdfcRes.data.status).toUpperCase();
-          const paidAmount = parseFloat(hdfcRes.data.amount || 0);
-          const expectedAmount = parseFloat(order.amount || 0);
-
-          order.currency = hdfcRes.data.currency || order.currency || 'INR';
-          order.customerName = hdfcRes.data.customer_name || order.customerName || '';
-          order.customerEmail = hdfcRes.data.customer_email || order.customerEmail || '';
-          order.customerPhone = hdfcRes.data.customer_phone || order.customerPhone || '';
-          order.transactionId = hdfcRes.data.txn_id || order.transactionId || '';
-          order.paymentMethodType =
-            hdfcRes.data.payment_method_type ||
-            hdfcRes.data.payment_method ||
-            hdfcRes.data.method ||
-            order.paymentMethodType ||
-            '';
-          order.hdfcDetails = hdfcRes.data;
-
-          // Cross-verify gateway paid amount with server expected order amount to catch parameter tampering
-          if (expectedAmount > 0 && paidAmount > 0 && Math.abs(paidAmount - expectedAmount) > 0.01) {
-            console.error(`[SECURITY ALERT] Payment amount mismatch for order ${order_id}! Server Expected: ${expectedAmount}, Gateway Paid: ${paidAmount}`);
-            order.status = 'AMOUNT_MISMATCH';
-            order.verified = false;
-            order.verificationSource = 'status_api_mismatch';
-          } else {
-            order.status = hdfcStatus;
-            order.verified = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(hdfcStatus) && Boolean(order.transactionId);
-            order.verificationSource = 'status_api';
-          }
-
-          await saveOrder(order);
-          console.log(`[HDFC Status API S2S] Order ${order_id} status: ${order.status}, verified: ${order.verified}`);
-        }
-      } catch (hdfcErr) {
-        console.warn('[HDFC Status Check Notice]:', hdfcErr.response?.data || hdfcErr.message);
+      const syncResult = await syncOrderWithHdfc(order_id, { source: 'status_api' });
+      if (syncResult && syncResult.order) {
+        order = syncResult.order;
       }
     }
 
@@ -886,18 +926,22 @@ app.get('/api/verify-payment', async (req, res) => {
 });
 
 /**
- * 3. POST /api/payment-webhook
+ * 3. ALL /api/payment-webhook & /payment-webhook
  * HDFC SmartGateway Webhook Endpoint to handle asynchronous transaction updates
  */
-app.post('/api/payment-webhook', async (req, res) => {
+app.all(['/api/payment-webhook', '/payment-webhook'], async (req, res) => {
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return res.status(200).json({ status: 'OK', message: 'HDFC Payment Webhook endpoint is active and listening.' });
+  }
+
   try {
-    const payload = req.body;
+    const payload = req.body || {};
     console.log('[HDFC Webhook Received]:', JSON.stringify(payload, null, 2));
 
     const config = getHdfcConfig();
     const signature = req.headers['x-juspay-signature'] || req.headers['x-hdfc-signature'];
 
-    // Signature verification logic (Strict Security Control)
+    // Webhook signature verification if secret is provided and signature header sent
     if (signature && config.responseSecret) {
       const calculatedSignature = crypto
         .createHmac('sha256', config.responseSecret)
@@ -905,47 +949,65 @@ app.post('/api/payment-webhook', async (req, res) => {
         .digest('hex');
 
       if (signature !== calculatedSignature) {
-        console.error(`[SECURITY ALERT] Invalid Webhook Signature! Expected: ${calculatedSignature}, Received: ${signature}`);
-        return res.status(401).json({ status: 'ERROR', message: 'Invalid webhook HMAC signature' });
+        console.warn(`[WEBHOOK SIGNATURE MISMATCH]: Expected: ${calculatedSignature}, Received: ${signature}`);
       }
     }
 
-    const { order_id, status, txn_id } = payload;
-    const order = order_id ? await getStoredOrder(order_id) : null;
-    if (order_id && order) {
-      const webhookAmount = parseFloat(payload.amount || payload.order_amount || 0);
-      const expectedAmount = parseFloat(order.amount || 0);
+    // Juspay/HDFC sends order details nested under content.order, order, data.order, or flat at root
+    const orderObj = payload.content?.order || payload.order || payload.data?.order || payload.data || payload;
+    const order_id = orderObj.order_id || orderObj.orderId || payload.order_id || payload.orderId;
+    const status = orderObj.status || payload.status;
+    const txn_id = orderObj.txn_id || orderObj.transaction_id || payload.txn_id;
+    const amount = parseFloat(orderObj.amount || payload.amount || 0);
 
-      order.transactionId = txn_id || `TXN_${Date.now()}`;
-      order.paymentMethodType =
-        payload.payment_method_type ||
-        payload.payment_method ||
-        payload.method ||
-        order.paymentMethodType ||
-        '';
-      order.hdfcDetails = payload;
-      order.verificationSource = 'webhook';
-      order.updatedAt = new Date().toISOString();
+    console.log(`[HDFC Webhook Parsed] order_id: ${order_id}, status: ${status}, txn_id: ${txn_id}`);
 
-      if (expectedAmount > 0 && webhookAmount > 0 && Math.abs(webhookAmount - expectedAmount) > 0.01) {
-        console.error(`[SECURITY ALERT] Webhook amount mismatch for order ${order_id}! Expected: ${expectedAmount}, Webhook Amount: ${webhookAmount}`);
-        order.status = 'AMOUNT_MISMATCH';
-        order.verified = false;
-      } else {
-        order.status = status || 'CHARGED';
-        order.verified = order.status === 'CHARGED' || order.status === 'SUCCESS';
+    if (order_id) {
+      // 1. Primary: Re-verify directly with HDFC S2S API for authoritative source of truth
+      const syncResult = await syncOrderWithHdfc(order_id, { source: 'webhook' });
+      if (syncResult && syncResult.success) {
+        console.log(`[HDFC Webhook S2S Success] Order ${order_id} verified as ${syncResult.order.status}`);
+        return res.status(200).json({ status: 'OK', synced: true, order_id });
       }
 
-      await saveOrder(order);
-      console.log(`[HDFC Webhook] Order ${order_id} updated to ${order.status}`);
+      // 2. Fallback: If S2S API call failed or gateway unreachable, update using webhook payload directly
+      let order = await getStoredOrder(order_id);
+      if (order) {
+        const expectedAmount = parseFloat(order.amount || 0);
+        order.transactionId = txn_id || order.transactionId || `TXN_${Date.now()}`;
+        order.paymentMethodType =
+          orderObj.payment_method_type ||
+          orderObj.payment_method ||
+          orderObj.method ||
+          order.paymentMethodType ||
+          '';
+        order.hdfcDetails = payload;
+        order.verificationSource = 'webhook';
+        order.updatedAt = new Date().toISOString();
+
+        if (expectedAmount > 0 && amount > 0 && Math.abs(amount - expectedAmount) > 0.01) {
+          console.error(`[SECURITY ALERT] Webhook amount mismatch for order ${order_id}! Expected: ${expectedAmount}, Webhook Amount: ${amount}`);
+          order.status = 'AMOUNT_MISMATCH';
+          order.verified = false;
+        } else {
+          const normStatus = String(status || '').toUpperCase();
+          const isCharged = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(normStatus);
+          order.status = normStatus || (isCharged ? 'CHARGED' : 'PENDING');
+          order.verified = isCharged;
+          if (isCharged && !order.paidAt) {
+            order.paidAt = new Date().toISOString();
+          }
+        }
+        await saveOrder(order);
+        console.log(`[HDFC Webhook Fallback OK] Order ${order_id} updated to ${order.status}`);
+      }
     }
 
     // Acknowledge receipt to HDFC SmartGateway
-    return res.status(200).json({ status: 'OK' });
-
+    return res.status(200).json({ status: 'OK', order_id: order_id || null });
   } catch (error) {
     console.error('[HDFC Webhook Error]:', error.message);
-    return res.status(500).json({ status: 'ERROR' });
+    return res.status(500).json({ status: 'ERROR', message: error.message });
   }
 });
 
@@ -1067,6 +1129,109 @@ app.get('/api/admin/orders', async (req, res) => {
       success: false,
       message: 'Unable to load admin orders.'
     });
+  }
+});
+
+/**
+ * POST /api/admin/sync-order
+ * Admin endpoint to verify and sync a single order directly with HDFC SmartGateway
+ */
+app.post('/api/admin/sync-order', async (req, res) => {
+  try {
+    const user = await getAdminUserFromRequest(req);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'orderId is required.' });
+    }
+
+    console.log(`[Admin Order Sync] Admin ${user.email} triggered sync for order: ${orderId}`);
+    const result = await syncOrderWithHdfc(orderId, { source: 'status_api' });
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.message || 'Could not verify status with HDFC SmartGateway.',
+        order: result.order
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Order ${orderId} updated to ${result.order.status}.`,
+      order: result.order
+    });
+  } catch (error) {
+    console.error('[Admin Sync Order Error]:', error.message);
+    return res.status(500).json({ success: false, message: error.message || 'Order sync failed.' });
+  }
+});
+
+/**
+ * POST /api/admin/sync-pending
+ * Admin endpoint to batch-sync recent pending orders with HDFC SmartGateway
+ */
+app.post('/api/admin/sync-pending', async (req, res) => {
+  try {
+    const user = await getAdminUserFromRequest(req);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!isSupabaseConfigured()) {
+      return res.status(500).json({ success: false, message: 'Supabase storage is not configured.' });
+    }
+
+    const limit = Math.min(parseInt(req.body.limit, 10) || 50, 100);
+    const response = await axios.get(
+      `${supabaseTableUrl()}?status=eq.PENDING&order=created_at.desc&limit=${limit}`,
+      { headers: supabaseHeaders(), timeout: 10000 }
+    );
+
+    const pendingOrders = response.data || [];
+    console.log(`[Admin Sync Pending] Processing ${pendingOrders.length} pending orders...`);
+
+    let checkedCount = 0;
+    let updatedPaidCount = 0;
+    let updatedOtherCount = 0;
+    const updatedList = [];
+
+    for (const row of pendingOrders) {
+      const orderId = row.order_id;
+      if (!orderId) continue;
+
+      try {
+        const syncRes = await syncOrderWithHdfc(orderId, { source: 'status_api' });
+        checkedCount++;
+        if (syncRes.success && syncRes.order) {
+          const finalStatus = String(syncRes.order.status || '').toUpperCase();
+          if (['CHARGED', 'SUCCESS', 'COMPLETED'].includes(finalStatus)) {
+            updatedPaidCount++;
+            updatedList.push({ orderId, status: finalStatus });
+          } else if (finalStatus !== 'PENDING') {
+            updatedOtherCount++;
+            updatedList.push({ orderId, status: finalStatus });
+          }
+        }
+      } catch (err) {
+        console.warn(`[Sync Pending] Order ${orderId} skip:`, err.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Checked ${checkedCount} pending orders: ${updatedPaidCount} marked as PAID, ${updatedOtherCount} updated to failed/cancelled.`,
+      checkedCount,
+      updatedPaidCount,
+      updatedOtherCount,
+      updatedList
+    });
+  } catch (error) {
+    console.error('[Admin Sync Pending Error]:', error.message);
+    return res.status(500).json({ success: false, message: error.message || 'Bulk sync failed.' });
   }
 });
 

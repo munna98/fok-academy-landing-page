@@ -373,6 +373,59 @@
       background: var(--navy-2);
     }
 
+    /* Sync Pending Button */
+    .btn-sync-pending {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-sync-pending:hover {
+      background: #0284c7;
+    }
+
+    .btn-sync-pending:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Inline sync button on PENDING row */
+    .btn-sync-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      padding: 3px 9px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    .btn-sync-row:hover {
+      background: #bae6fd;
+    }
+
+    .btn-sync-row:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* Excel Export Dropdown & Button */
     .export-dropdown-wrapper {
       position: relative;
@@ -975,6 +1028,10 @@
               <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Refresh
             </button>
 
+            <button id="btnSyncPending" class="btn-sync-pending" title="Check all PENDING orders with HDFC SmartGateway and update status">
+              <i class="fa-solid fa-arrows-rotate" id="syncPendingIcon"></i> Sync Pending
+            </button>
+
             <div class="export-dropdown-wrapper" id="exportDropdownWrapper">
               <button id="btnExportExcel" class="btn-export-excel" type="button" title="Export orders to Excel (.xlsx)">
                 <i class="fa-solid fa-file-excel"></i>
@@ -1463,7 +1520,7 @@
               </div>
             </td>
             <td><strong>₹${parseFloat(o.amount || 0).toLocaleString('en-IN')}</strong></td>
-            <td><span class="badge-status ${statusClass}"><i class="fa-solid fa-circle"></i> ${statusLabel}</span></td>
+            <td><span class="badge-status ${statusClass}"><i class="fa-solid fa-circle"></i> ${statusLabel}</span>${!isPaid ? `<button class="btn-sync-row" onclick="syncSingleOrder('${escapeHtml(o.order_id)}', this)" title="Check status with HDFC Gateway"><i class="fa-solid fa-arrows-rotate"></i> Sync</button>` : ''}</td>
             <td><span class="source-tag">${escapeHtml(o.verification_source || 'direct')}</span></td>
             <td><span class="order-id-code" style="font-size:11px;">${escapeHtml(o.transaction_id || 'Pending')}</span></td>
           </tr>
@@ -1476,6 +1533,89 @@
       navigator.clipboard.writeText(text).then(() => {
         alert('Copied Order ID: ' + text);
       }).catch(err => console.error(err));
+    }
+
+    // ─── SYNC SINGLE ORDER ───────────────────────────────────────────────────
+    async function syncSingleOrder(orderId, btnEl) {
+      if (!orderId) return;
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+      }
+      try {
+        const res = await fetch('/api/admin/sync-order', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId })
+        });
+        const data = await res.json();
+        if (data.success && data.order) {
+          const idx = rawOrders.findIndex(o => o.order_id === orderId);
+          if (idx !== -1) {
+            rawOrders[idx] = {
+              ...rawOrders[idx],
+              status: data.order.status || data.order.Status,
+              verified: data.order.verified,
+              transaction_id: data.order.transactionId || rawOrders[idx].transaction_id,
+              verification_source: data.order.verificationSource || rawOrders[idx].verification_source,
+              paid_at: data.order.paidAt || rawOrders[idx].paid_at
+            };
+          }
+          const isPaid = ['CHARGED', 'SUCCESS', 'COMPLETED'].includes(String(data.order.status || '').toUpperCase());
+          showToast(isPaid ? 'success' : 'error',
+            `Order ${orderId}: ${data.order.status || 'unknown'}${isPaid ? ' ✓ PAID!' : ''}`);
+          renderOrders();
+        } else {
+          showToast('error', data.message || 'Could not sync order. HDFC gateway unavailable.');
+          if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Sync';
+          }
+        }
+      } catch (err) {
+        showToast('error', 'Sync failed: ' + (err.message || 'Network error'));
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Sync';
+        }
+      }
+    }
+
+    // ─── SYNC ALL PENDING ────────────────────────────────────────────────────
+    async function syncAllPendingOrders() {
+      const btn = document.getElementById('btnSyncPending');
+      const icon = document.getElementById('syncPendingIcon');
+      if (btn) { btn.disabled = true; }
+      if (icon) { icon.className = 'fa-solid fa-spinner fa-spin'; }
+
+      showToast('success', 'Checking pending orders with HDFC SmartGateway...');
+
+      try {
+        const res = await fetch('/api/admin/sync-pending', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit: 50 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const msg = data.updatedPaidCount > 0
+            ? `✓ ${data.updatedPaidCount} order${data.updatedPaidCount > 1 ? 's' : ''} marked as PAID!`
+            : `Checked ${data.checkedCount} orders — no new payments found.`;
+          showToast(data.updatedPaidCount > 0 ? 'success' : 'error', msg);
+
+          // Reload orders from DB to reflect updated statuses
+          await loadOrders();
+        } else {
+          showToast('error', data.message || 'Sync failed. HDFC gateway may be unreachable.');
+        }
+      } catch (err) {
+        showToast('error', 'Sync failed: ' + (err.message || 'Network error'));
+      } finally {
+        if (btn) { btn.disabled = false; }
+        if (icon) { icon.className = 'fa-solid fa-arrows-rotate'; }
+      }
     }
 
     function escapeHtml(str) {
@@ -1507,6 +1647,7 @@
 
     document.getElementById('statusFilter').addEventListener('change', renderOrders);
     document.getElementById('btnRefresh').addEventListener('click', loadOrders);
+    document.getElementById('btnSyncPending').addEventListener('click', syncAllPendingOrders);
     
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
