@@ -258,14 +258,319 @@
       gap: 5px;
     }
 
-    /* Restored Unified Phone Input Bar Placement */
+    /* Enhanced Phone & Searchable Country Select Styles */
+    .visually-hidden-accessible {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    .fok-select-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .fok-select-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 13px 16px;
+      color: var(--navy);
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.25s ease;
+      text-align: left;
+    }
+
+    .fok-select-trigger:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .fok-select-trigger:focus,
+    .fok-select-container.is-open .fok-select-trigger {
+      background: white;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(231, 169, 21, 0.2);
+    }
+
+    .fok-select-value {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fok-select-value .country-flag {
+      font-size: 18px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .fok-select-value .country-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .fok-select-arrow {
+      color: #64748b;
+      font-size: 12px;
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    .fok-select-container.is-open .fok-select-arrow,
+    .fok-dial-container.is-open .fok-dial-arrow {
+      transform: rotate(180deg);
+      color: var(--gold-dark);
+    }
+
+    .fok-select-menu,
+    .fok-dial-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: white;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(9, 26, 43, 0.16);
+      z-index: 1050;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fokDropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fok-select-menu {
+      width: 100%;
+      max-height: 330px;
+    }
+
+    .fok-dial-menu {
+      width: min(340px, 92vw);
+      max-height: 330px;
+    }
+
+    @keyframes fokDropdownFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fok-select-search-wrap {
+      position: sticky;
+      top: 0;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      z-index: 2;
+    }
+
+    .fok-search-input-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .fok-search-input-box .fok-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 13px;
+      pointer-events: none;
+      transition: color 0.2s ease;
+      z-index: 3;
+    }
+
+    .fok-search-input-box .fok-select-search-input {
+      width: 100% !important;
+      background: #f8fafc !important;
+      border: 1.5px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      padding: 9px 34px 9px 36px !important;
+      font-size: 13.5px !important;
+      font-family: inherit !important;
+      color: var(--navy) !important;
+      outline: none !important;
+      box-shadow: none !important;
+      transition: all 0.2s ease !important;
+    }
+
+    .fok-search-input-box .fok-select-search-input:focus {
+      background: #ffffff !important;
+      border-color: var(--gold) !important;
+      box-shadow: 0 0 0 3px rgba(231, 169, 21, 0.2) !important;
+    }
+
+    .fok-search-input-box:focus-within .fok-search-icon {
+      color: var(--gold-dark);
+    }
+
+    .fok-clear-search-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #e2e8f0;
+      border: none;
+      color: #64748b;
+      font-size: 10px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s ease;
+      padding: 0;
+      line-height: 1;
+      z-index: 2;
+    }
+
+    .fok-clear-search-btn:hover {
+      background: #cbd5e1;
+      color: var(--navy);
+      transform: translateY(-50%) scale(1.08);
+    }
+
+    .fok-select-options {
+      overflow-y: auto;
+      max-height: 260px;
+      padding: 6px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .fok-options-group-title {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      padding: 8px 14px 4px;
+      background: #f8fafc;
+      border-top: 1px solid #f1f5f9;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .fok-options-group-title:first-child {
+      border-top: none;
+    }
+
+    .fok-option-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      font-size: 13.5px;
+      color: var(--navy);
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      user-select: none;
+    }
+
+    .fok-option-item:hover,
+    .fok-option-item.is-highlighted {
+      background: #fef9ee;
+      color: var(--navy);
+    }
+
+    .fok-option-item.is-selected {
+      background: #fef3c7;
+      font-weight: 700;
+      color: var(--gold-dark);
+    }
+
+    .fok-option-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fok-option-flag,
+    .fok-select-value .country-flag,
+    .fok-dial-flag {
+      font-size: 16px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: #334155;
+      flex-shrink: 0;
+    }
+
+    .fok-option-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fok-option-dial {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 2px 7px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    .fok-option-check {
+      color: var(--gold-dark);
+      font-size: 12px;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .fok-select-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    /* Unified Phone Input Wrap */
     .phone-input-wrap {
       display: flex;
       border: 1.5px solid #cbd5e1;
       border-radius: 14px;
-      overflow: hidden;
+      overflow: visible;
       background: #f8fafc;
       transition: all 0.25s ease;
+      position: relative;
     }
 
     .phone-input-wrap:focus-within {
@@ -274,43 +579,68 @@
       box-shadow: 0 0 0 4px rgba(231, 169, 21, 0.2);
     }
 
-    .country-select {
+    .fok-dial-container {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .fok-dial-trigger {
+      display: flex;
+      align-items: center;
+      gap: 7px;
       background: #f1f5f9;
       color: var(--navy);
       font-weight: 700;
       font-size: 14px;
-      padding: 14px 28px 14px 14px;
+      padding: 14px 14px;
       border: none;
       border-right: 1.5px solid #cbd5e1;
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
       outline: none;
       cursor: pointer;
       font-family: inherit;
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2319324c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 8px center;
       transition: background-color 0.2s;
+      height: 100%;
     }
 
-    .country-select:focus {
+    .fok-dial-trigger:hover {
       background-color: #e2e8f0;
     }
 
-    .country-select option {
-      background: white;
-      color: var(--navy);
-      font-weight: 600;
-      padding: 8px;
+    .fok-dial-trigger:focus,
+    .fok-dial-container.is-open .fok-dial-trigger {
+      background-color: #e2e8f0;
     }
 
-    .phone-input-wrap input {
+    .fok-dial-flag {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .fok-dial-code {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .fok-dial-arrow {
+      font-size: 10px;
+      color: #64748b;
+      transition: transform 0.2s ease;
+    }
+
+    .phone-input-wrap input#studentPhone,
+    .phone-input-wrap > input[type="tel"] {
       border: none !important;
       box-shadow: none !important;
-      border-radius: 0 !important;
+      border-radius: 0 12px 12px 0 !important;
       background: transparent !important;
-      padding-left: 14px !important;
+      padding: 14px 16px !important;
       color: var(--navy) !important;
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
     }
 
     /* Submit Button & Micro Features */
@@ -469,28 +799,36 @@
 
               <!-- Present Country -->
               <div class="form-group">
-                <label for="studentCountry"><i class="fa-solid fa-globe"></i> Present Country</label>
-                <select id="studentCountry" class="form-select-field" required>
-                  <option value="" disabled selected>Select your present country</option>
-                  <option value="India">🇮🇳 India</option>
-                  <option value="United Arab Emirates">🇦🇪 United Arab Emirates</option>
-                  <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
-                  <option value="Qatar">🇶🇦 Qatar</option>
-                  <option value="Oman">🇴🇲 Oman</option>
-                  <option value="Kuwait">🇰🇼 Kuwait</option>
-                  <option value="Bahrain">🇧🇭 Bahrain</option>
-                  <option value="United States">🇺🇸 United States</option>
-                  <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                  <option value="Singapore">🇸🇬 Singapore</option>
-                  <option value="Malaysia">🇲🇾 Malaysia</option>
-                  <option value="Australia">🇦🇺 Australia</option>
-                  <option value="Canada">🇨🇦 Canada</option>
-                  <option value="Germany">🇩🇪 Germany</option>
-                  <option value="France">🇫🇷 France</option>
-                  <option value="Netherlands">🇳🇱 Netherlands</option>
-                  <option value="New Zealand">🇳🇿 New Zealand</option>
-                  <option value="Other">🌍 Other</option>
-                </select>
+                <label for="countrySelectTrigger"><i class="fa-solid fa-globe"></i> Present Country</label>
+                <div class="fok-select-container" id="countrySelectContainer">
+                  <button type="button" class="fok-select-trigger" id="countrySelectTrigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="fok-select-value" id="countrySelectValue">
+                      <span class="country-flag">🇮🇳</span>
+                      <span class="country-name">India</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down fok-select-arrow"></i>
+                  </button>
+
+                  <div class="fok-select-menu" id="countrySelectMenu" role="listbox" style="display: none;">
+                    <div class="fok-select-search-wrap">
+                      <div class="fok-search-input-box">
+                        <i class="fa-solid fa-magnifying-glass fok-search-icon"></i>
+                        <input type="text" class="fok-select-search-input" id="countrySearchInput" placeholder="Type country name or code..." autocomplete="off" />
+                        <button type="button" class="fok-clear-search-btn" id="countryClearBtn" style="display: none;" aria-label="Clear search">
+                          <i class="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="fok-select-options" id="countryOptionsList">
+                      <!-- Populated dynamically via countries-data.js -->
+                    </div>
+                  </div>
+
+                  <!-- Underlying select keeping original id for form validation & state trigger -->
+                  <select id="studentCountry" class="visually-hidden-accessible" required tabindex="-1">
+                    <option value="India" selected>India</option>
+                  </select>
+                </div>
                 <span class="field-error" id="countryError"></span>
               </div>
 
@@ -564,22 +902,36 @@
 
               <div class="form-group">
                 <label for="studentPhone"><i class="fa-solid fa-phone"></i> WhatsApp Mobile Number</label>
-                <div class="phone-input-wrap">
-                  <select id="countryCodeSelect" class="country-select" aria-label="Select Country Code">
-                    <option value="+91" selected>🇮🇳 +91</option>
-                    <option value="+971">🇦🇪 +971</option>
-                    <option value="+966">🇸🇦 +966</option>
-                    <option value="+974">🇶🇦 +974</option>
-                    <option value="+968">🇴🇲 +968</option>
-                    <option value="+965">🇰🇼 +965</option>
-                    <option value="+973">🇧🇭 +973</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="+44">🇬🇧 +44</option>
-                    <option value="+65">🇸🇬 +65</option>
-                    <option value="+60">🇲🇾 +60</option>
-                    <option value="+61">🇦🇺 +61</option>
-                  </select>
-                  <input type="tel" id="studentPhone" placeholder="Mobile number" maxlength="15" required />
+                <div class="phone-input-wrap" id="phoneInputWrap">
+                  <div class="fok-dial-container" id="dialCodeContainer">
+                    <button type="button" class="fok-dial-trigger" id="dialCodeTrigger" aria-haspopup="listbox" aria-expanded="false" title="Change country calling code">
+                      <span class="fok-dial-flag" id="dialCodeFlag">🇮🇳</span>
+                      <span class="fok-dial-code" id="dialCodeDisplay">+91</span>
+                      <i class="fa-solid fa-chevron-down fok-dial-arrow"></i>
+                    </button>
+
+                    <div class="fok-dial-menu" id="dialCodeMenu" role="listbox" style="display: none;">
+                      <div class="fok-select-search-wrap">
+                        <div class="fok-search-input-box">
+                          <i class="fa-solid fa-magnifying-glass fok-search-icon"></i>
+                          <input type="text" class="fok-select-search-input" id="dialSearchInput" placeholder="Search country or code (e.g. +971)..." autocomplete="off" />
+                          <button type="button" class="fok-clear-search-btn" id="dialClearBtn" style="display: none;" aria-label="Clear search">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="fok-select-options" id="dialOptionsList">
+                        <!-- Populated dynamically via countries-data.js -->
+                      </div>
+                    </div>
+
+                    <!-- Underlying select keeping original id for form serialization -->
+                    <select id="countryCodeSelect" class="visually-hidden-accessible" aria-label="Select Country Code" tabindex="-1">
+                      <option value="+91" selected>🇮🇳 +91</option>
+                    </select>
+                  </div>
+
+                  <input type="tel" id="studentPhone" placeholder="98765 43210" autocomplete="tel-national" required />
                 </div>
                 <span class="field-hint"><i class="fa-brands fa-whatsapp text-gold"></i> Session reminders & materials sent via WhatsApp</span>
                 <span class="field-error" id="phoneError"></span>
@@ -634,6 +986,7 @@
 
 
 
+  <script src="countries-data.js"></script>
   <script src="checkout.js"></script>
 </body>
 </html>
