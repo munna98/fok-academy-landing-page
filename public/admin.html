@@ -1024,6 +1024,15 @@
               <option value="FAILED">FAILED</option>
             </select>
 
+            <select id="sourceFilter" class="select-filter" title="Filter by Marketing Traffic Source">
+              <option value="ALL">All Sources</option>
+              <option value="META_ADS">Meta / Instagram Ads</option>
+              <option value="IG_ORGANIC">Instagram Organic</option>
+              <option value="FB_ORGANIC">Facebook Organic</option>
+              <option value="GOOGLE">Google (Search & Ads)</option>
+              <option value="DIRECT">Direct / Other</option>
+            </select>
+
             <button id="btnRefresh" class="btn-refresh">
               <i class="fa-solid fa-rotate-right" id="refreshIcon"></i> Refresh
             </button>
@@ -1065,6 +1074,7 @@
                 <th>Order ID</th>
                 <th>Date & Time</th>
                 <th>Customer</th>
+                <th>Traffic Source</th>
                 <th>Amount</th>
                 <th>Status</th>
                 <th>Verification</th>
@@ -1073,7 +1083,7 @@
             </thead>
             <tbody id="ordersTbody">
               <tr>
-                <td colspan="7">
+                <td colspan="8">
                   <div class="empty-state">
                     <i class="fa-solid fa-spinner fa-spin"></i>
                     <h3>Loading orders...</h3>
@@ -1130,7 +1140,7 @@
         console.error(err);
         document.getElementById('ordersTbody').innerHTML = `
           <tr>
-            <td colspan="7">
+            <td colspan="8">
               <div class="empty-state">
                 <i class="fa-solid fa-triangle-exclamation text-red"></i>
                 <h3>Unable to load orders</h3>
@@ -1258,7 +1268,7 @@
           if (orderDate < bounds.start || orderDate > bounds.end) return false;
         }
 
-        // Search query check (including location fields)
+        // Search query check (including location & marketing fields)
         const matchesQuery = !query || 
           (o.order_id && o.order_id.toLowerCase().includes(query)) ||
           (o.customer_name && o.customer_name.toLowerCase().includes(query)) ||
@@ -1270,6 +1280,12 @@
           (o.customerCountry && o.customerCountry.toLowerCase().includes(query)) ||
           (o.customerState && o.customerState.toLowerCase().includes(query)) ||
           (o.customerDistrict && o.customerDistrict.toLowerCase().includes(query)) ||
+          (o.traffic_source && o.traffic_source.toLowerCase().includes(query)) ||
+          (o.trafficSource && o.trafficSource.toLowerCase().includes(query)) ||
+          (o.utm_campaign && o.utm_campaign.toLowerCase().includes(query)) ||
+          (o.utmCampaign && o.utmCampaign.toLowerCase().includes(query)) ||
+          (o.utm_medium && o.utm_medium.toLowerCase().includes(query)) ||
+          (o.utmMedium && o.utmMedium.toLowerCase().includes(query)) ||
           (o.transaction_id && o.transaction_id.toLowerCase().includes(query));
 
         // Status check
@@ -1282,7 +1298,23 @@
           matchesStatus = o.status === 'FAILED';
         }
 
-        return matchesQuery && matchesStatus;
+        // Marketing traffic source check
+        const selectedSource = document.getElementById('sourceFilter')?.value || 'ALL';
+        let matchesSource = true;
+        const srcStr = String(o.traffic_source || o.trafficSource || 'Direct').toUpperCase();
+        if (selectedSource === 'META_ADS') {
+          matchesSource = srcStr.includes('META') || srcStr.includes('INSTAGRAM AD') || srcStr.includes('FACEBOOK AD');
+        } else if (selectedSource === 'IG_ORGANIC') {
+          matchesSource = srcStr.includes('INSTAGRAM') && !srcStr.includes('AD');
+        } else if (selectedSource === 'FB_ORGANIC') {
+          matchesSource = srcStr.includes('FACEBOOK') && !srcStr.includes('AD');
+        } else if (selectedSource === 'GOOGLE') {
+          matchesSource = srcStr.includes('GOOGLE');
+        } else if (selectedSource === 'DIRECT') {
+          matchesSource = srcStr.includes('DIRECT');
+        }
+
+        return matchesQuery && matchesStatus && matchesSource;
       });
     }
 
@@ -1396,6 +1428,11 @@
             'Country': o.customer_country || o.customerCountry || '',
             'State': o.customer_state || o.customerState || '',
             'District / City': o.customer_district || o.customerDistrict || '',
+            'Traffic Source': o.traffic_source || o.trafficSource || 'Direct',
+            'Campaign Name': o.utm_campaign || o.utmCampaign || '',
+            'Medium': o.utm_medium || o.utmMedium || '',
+            'Ad Content': o.utm_content || o.utmContent || '',
+            'Referrer': o.referrer_url || o.referrerUrl || '',
             'Amount (INR)': isNaN(amountNum) ? 0 : amountNum,
             'Currency': o.currency || 'INR',
             'Payment Status': statusLabel,
@@ -1462,7 +1499,7 @@
       if (filtered.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7">
+            <td colspan="8">
               <div class="empty-state">
                 <i class="fa-solid fa-folder-open"></i>
                 <h3>No matching orders found</h3>
@@ -1518,6 +1555,70 @@
                   `;
                 })()}
               </div>
+            </td>
+            <td>
+              ${(() => {
+                const src = o.traffic_source || o.trafficSource || 'Direct';
+                let icon = 'fa-solid fa-compass';
+                let color = '#475569';
+                let bg = '#f8fafc';
+                let border = '#e2e8f0';
+
+                const srcUpper = src.toUpperCase();
+                if (srcUpper.includes('META') || srcUpper.includes('INSTAGRAM AD') || srcUpper.includes('FACEBOOK AD')) {
+                  icon = 'fa-brands fa-meta';
+                  color = '#0284c7';
+                  bg = 'rgba(2, 132, 199, 0.08)';
+                  border = 'rgba(2, 132, 199, 0.3)';
+                } else if (srcUpper.includes('INSTAGRAM')) {
+                  icon = 'fa-brands fa-instagram';
+                  color = '#e1306c';
+                  bg = 'rgba(225, 48, 108, 0.08)';
+                  border = 'rgba(225, 48, 108, 0.3)';
+                } else if (srcUpper.includes('FACEBOOK')) {
+                  icon = 'fa-brands fa-facebook';
+                  color = '#1877f2';
+                  bg = 'rgba(24, 119, 242, 0.08)';
+                  border = 'rgba(24, 119, 242, 0.3)';
+                } else if (srcUpper.includes('GOOGLE')) {
+                  icon = 'fa-brands fa-google';
+                  color = '#ea4335';
+                  bg = 'rgba(234, 67, 53, 0.08)';
+                  border = 'rgba(234, 67, 53, 0.3)';
+                } else if (srcUpper.includes('YOUTUBE')) {
+                  icon = 'fa-brands fa-youtube';
+                  color = '#dc2626';
+                  bg = 'rgba(220, 38, 38, 0.08)';
+                  border = 'rgba(220, 38, 38, 0.3)';
+                } else if (srcUpper.includes('WHATSAPP')) {
+                  icon = 'fa-brands fa-whatsapp';
+                  color = '#16a34a';
+                  bg = 'rgba(22, 163, 74, 0.08)';
+                  border = 'rgba(22, 163, 74, 0.3)';
+                }
+
+                const campaign = o.utm_campaign || o.utmCampaign;
+                const medium = o.utm_medium || o.utmMedium;
+                const content = o.utm_content || o.utmContent;
+
+                return `
+                  <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                    <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: ${color}; background: ${bg}; padding: 3px 8px; border-radius: 6px; border: 1px solid ${border};">
+                      <i class="${icon}"></i> ${escapeHtml(src)}
+                    </span>
+                    ${campaign ? `
+                      <span style="font-size: 11px; font-weight: 600; color: #334155; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Campaign: ${escapeHtml(campaign)}">
+                        <i class="fa-solid fa-bullhorn" style="color: #94a3b8; font-size: 10px;"></i> ${escapeHtml(campaign)}
+                      </span>
+                    ` : ''}
+                    ${content ? `
+                      <span style="font-size: 10.5px; color: #64748b; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Ad Creative: ${escapeHtml(content)}">
+                        Ad: ${escapeHtml(content)}
+                      </span>
+                    ` : (medium && !campaign ? `<span style="font-size: 10.5px; color: #94a3b8;">Medium: ${escapeHtml(medium)}</span>` : '')}
+                  </div>
+                `;
+              })()}
             </td>
             <td><strong>₹${parseFloat(o.amount || 0).toLocaleString('en-IN')}</strong></td>
             <td><span class="badge-status ${statusClass}"><i class="fa-solid fa-circle"></i> ${statusLabel}</span>${!isPaid ? `<button class="btn-sync-row" onclick="syncSingleOrder('${escapeHtml(o.order_id)}', this)" title="Check status with HDFC Gateway"><i class="fa-solid fa-arrows-rotate"></i> Sync</button>` : ''}</td>
@@ -1646,6 +1747,7 @@
     });
 
     document.getElementById('statusFilter').addEventListener('change', renderOrders);
+    document.getElementById('sourceFilter').addEventListener('change', renderOrders);
     document.getElementById('btnRefresh').addEventListener('click', loadOrders);
     document.getElementById('btnSyncPending').addEventListener('click', syncAllPendingOrders);
     

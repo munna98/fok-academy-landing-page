@@ -10,6 +10,15 @@ create table if not exists public.payment_orders (
   customer_country text,
   customer_state text,
   customer_district text,
+  traffic_source text,
+  utm_source text,
+  utm_medium text,
+  utm_campaign text,
+  utm_content text,
+  utm_term text,
+  fbclid text,
+  referrer_url text,
+  landing_page text,
   amount numeric(12,2) not null,
   currency text not null default 'INR',
   status text not null default 'PENDING',
@@ -29,6 +38,17 @@ alter table public.payment_orders add column if not exists customer_country text
 alter table public.payment_orders add column if not exists customer_state text;
 alter table public.payment_orders add column if not exists customer_district text;
 
+-- Migration: add marketing & traffic attribution columns
+alter table public.payment_orders add column if not exists traffic_source text;
+alter table public.payment_orders add column if not exists utm_source text;
+alter table public.payment_orders add column if not exists utm_medium text;
+alter table public.payment_orders add column if not exists utm_campaign text;
+alter table public.payment_orders add column if not exists utm_content text;
+alter table public.payment_orders add column if not exists utm_term text;
+alter table public.payment_orders add column if not exists fbclid text;
+alter table public.payment_orders add column if not exists referrer_url text;
+alter table public.payment_orders add column if not exists landing_page text;
+
 create unique index if not exists payment_orders_transaction_id_key
   on public.payment_orders (transaction_id)
   where transaction_id is not null;
@@ -38,6 +58,9 @@ create index if not exists payment_orders_customer_id_idx
 
 create index if not exists payment_orders_status_idx
   on public.payment_orders (status);
+
+create index if not exists payment_orders_traffic_source_idx
+  on public.payment_orders (traffic_source);
 
 create or replace function public.set_payment_orders_updated_at()
 returns trigger

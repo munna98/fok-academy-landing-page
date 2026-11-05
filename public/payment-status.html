@@ -10,6 +10,23 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="styles.css" />
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1440861517413200');
+    fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1440861517413200&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
   <style>
     body {
       background:
@@ -459,6 +476,23 @@
           const isFailed = ['FAILED', 'DECLINED', 'REJECTED', 'AUTHENTICATION_FAILED', 'FAILURE'].includes(statusVal);
 
           if (isSuccess) {
+            // Track Meta Pixel Purchase event with deduplication guard
+            const resolvedOrderId = orderObj.orderId || orderId || 'order';
+            const dedupeKey = 'fbq_purchase_' + resolvedOrderId;
+            if (window.fbq && !sessionStorage.getItem(dedupeKey)) {
+              try {
+                fbq('track', 'Purchase', {
+                  value: Number(displayAmount) || 499,
+                  currency: 'INR',
+                  content_name: 'Amazon Seller Workshop',
+                  order_id: resolvedOrderId
+                });
+                sessionStorage.setItem(dedupeKey, '1');
+              } catch (e) {
+                console.warn('[Meta Pixel Purchase Tracking Error]:', e);
+              }
+            }
+
             // Retrieve dynamic WhatsApp group link set by admin
             const whatsappGroupUrl = data?.whatsappLink || orderObj?.whatsappLink || 'https://chat.whatsapp.com/LgVD87ZZnFwJGzhhFqiv1M?s=sh&p=a&mlu=4&ilr=4&iam=2';
 

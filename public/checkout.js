@@ -919,6 +919,9 @@ if (checkoutForm) {
         throw new Error(sessionData.message || 'Unable to establish secure checkout session.');
       }
 
+      // Retrieve marketing & traffic attribution from tracker
+      const attribution = window.FOK_TRACKER ? window.FOK_TRACKER.getAttribution() : null;
+
       // Step 2: Initiate HDFC Payment Order using the cryptographic session token
       const response = await fetch('/api/create-payment-order', {
         method: 'POST',
@@ -930,7 +933,8 @@ if (checkoutForm) {
           country: countryVal,
           state: stateVal || null,
           district: districtVal || null,
-          sessionToken: sessionData.sessionToken
+          sessionToken: sessionData.sessionToken,
+          attribution: attribution || {}
         })
       });
 

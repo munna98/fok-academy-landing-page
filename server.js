@@ -381,6 +381,15 @@ const toDbOrder = (order) => ({
   gateway_response: order.gatewayResponse || null,
   gateway_status_response: order.hdfcDetails || null,
   paid_at: order.paidAt || null,
+  traffic_source: order.trafficSource || null,
+  utm_source: order.utmSource || null,
+  utm_medium: order.utmMedium || null,
+  utm_campaign: order.utmCampaign || null,
+  utm_content: order.utmContent || null,
+  utm_term: order.utmTerm || null,
+  fbclid: order.fbclid || null,
+  referrer_url: order.referrerUrl || null,
+  landing_page: order.landingPage || null,
   created_at: order.createdAt || new Date().toISOString(),
   updated_at: new Date().toISOString()
 });
@@ -408,6 +417,15 @@ const fromDbOrder = (row) => {
     gatewayResponse: row.gateway_response || null,
     hdfcDetails: row.gateway_status_response || null,
     paidAt: row.paid_at || null,
+    trafficSource: row.traffic_source || null,
+    utmSource: row.utm_source || null,
+    utmMedium: row.utm_medium || null,
+    utmCampaign: row.utm_campaign || null,
+    utmContent: row.utm_content || null,
+    utmTerm: row.utm_term || null,
+    fbclid: row.fbclid || null,
+    referrerUrl: row.referrer_url || null,
+    landingPage: row.landing_page || null,
     createdAt: row.created_at || null,
     updatedAt: row.updated_at || null
   };
@@ -429,6 +447,28 @@ const saveOrder = async (order) => {
     console.log(`[Supabase Save OK] Order ${order.orderId} persisted`);
     return fromDbOrder(response.data?.[0]) || order;
   } catch (error) {
+    const errorMsg = error.response?.data?.message || '';
+    if (errorMsg.includes('traffic_source') || error.response?.data?.code === '42703' || errorMsg.includes('column')) {
+      console.warn(`[Supabase Save Notice] Schema missing attribution columns; saving basic order for ${order.orderId}`);
+      const basicOrder = { ...toDbOrder(order) };
+      delete basicOrder.traffic_source;
+      delete basicOrder.utm_source;
+      delete basicOrder.utm_medium;
+      delete basicOrder.utm_campaign;
+      delete basicOrder.utm_content;
+      delete basicOrder.utm_term;
+      delete basicOrder.fbclid;
+      delete basicOrder.referrer_url;
+      delete basicOrder.landing_page;
+      try {
+        const fallbackRes = await axios.post(`${supabaseTableUrl()}?on_conflict=order_id`, basicOrder, {
+          headers: supabaseHeaders('resolution=merge-duplicates,return=representation')
+        });
+        return fromDbOrder(fallbackRes.data?.[0]) || order;
+      } catch (fallbackErr) {
+        console.error('[Supabase Fallback Save Error]:', fallbackErr.response?.data || fallbackErr.message);
+      }
+    }
     console.error('[Supabase Save Order Error]:', error.response?.data || error.message);
     return order;
   }
@@ -542,7 +582,7 @@ app.post('/api/initiate-checkout-session', (req, res) => {
  */
 app.post('/api/create-payment-order', async (req, res) => {
   try {
-    const { name, email, phone, country, state, district, isExpired, sessionToken } = req.body;
+    const { name, email, phone, country, state, district, isExpired, sessionToken, attribution = {} } = req.body;
 
     if (!name || !email || !phone) {
       return res.status(400).json({
@@ -620,6 +660,48 @@ app.post('/api/create-payment-order', async (req, res) => {
     const config = getHdfcConfig();
     const customerId = buildCustomerId({ email, phone: cleanPhone });
 
+    // Extract marketing & traffic attribution
+    const sanitizeAttr = (v, len = 255) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, len) : null);
+    const attr = (typeof attribution === 'object' && attribution !== null) ? attribution : {};
+
+    const utmSource = sanitizeAttr(attr.utm_source || attr.utmSource || req.body.utm_source);
+    const utmMedium = sanitizeAttr(attr.utm_medium || attr.utmMedium || req.body.utm_medium);
+    const utmCampaign = sanitizeAttr(attr.utm_campaign || attr.utmCampaign || req.body.utm_campaign);
+    const utmContent = sanitizeAttr(attr.utm_content || attr.utmContent || req.body.utm_content);
+    const utmTerm = sanitizeAttr(attr.utm_term || attr.utmTerm || req.body.utm_term);
+    const fbclid = sanitizeAttr(attr.fbclid || req.body.fbclid, 500);
+    const referrerUrl = sanitizeAttr(attr.referrer_url || attr.referrerUrl || req.body.referrer_url, 1000);
+    const landingPage = sanitizeAttr(attr.landing_page || attr.landingPage || req.body.landing_page, 1000);
+
+    let trafficSource = sanitizeAttr(attr.traffic_source || attr.trafficSource || req.body.traffic_source);
+    if (!trafficSource || trafficSource === 'Direct') {
+      const isPaid = /^(meta_ad|cpc|paid|paid_social|ad|ads|sponsored|facebook_ad|instagram_ad)$/i.test(utmMedium || '');
+      const isOrganicMedium = /^(bio|organic|story|reels|profile|dm|post)$/i.test(utmMedium || '');
+      const isMetaSource = /^(meta|instagram|facebook|ig|fb)$/i.test(utmSource || '');
+      const refLower = (referrerUrl || '').toLowerCase();
+
+      if ((isMetaSource && isPaid) || (fbclid && !isOrganicMedium)) {
+        trafficSource = (utmSource === 'instagram' || refLower.includes('instagram')) ? 'Meta Ads (Instagram)' : 'Meta Ads';
+      } else if (utmSource === 'instagram' || utmSource === 'ig' || refLower.includes('instagram.com')) {
+        trafficSource = utmMedium === 'bio' ? 'Instagram Bio' : 'Instagram Organic';
+      } else if (utmSource === 'facebook' || utmSource === 'fb' || refLower.includes('facebook.com')) {
+        trafficSource = 'Facebook Organic';
+      } else if (utmSource === 'google' && isPaid) {
+        trafficSource = 'Google Ads';
+      } else if (utmSource === 'google' || refLower.includes('google.')) {
+        trafficSource = 'Google Search';
+      } else if (referrerUrl) {
+        try {
+          const u = new URL(referrerUrl);
+          trafficSource = `Referral: ${u.hostname.replace(/^www\./, '')}`;
+        } catch (e) {
+          trafficSource = 'Referral';
+        }
+      } else {
+        trafficSource = trafficSource || 'Direct';
+      }
+    }
+
     // Store pending order details
     const orderData = {
       orderId,
@@ -633,6 +715,15 @@ app.post('/api/create-payment-order', async (req, res) => {
       amount,
       currency: 'INR',
       status: 'PENDING',
+      trafficSource,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmContent,
+      utmTerm,
+      fbclid,
+      referrerUrl,
+      landingPage,
       createdAt: new Date().toISOString()
     };
     await saveOrder(orderData);
@@ -1090,9 +1181,10 @@ app.get('/api/admin/orders', async (req, res) => {
     let ordersList = [];
 
     try {
-      // Query orders including customer location details (country, state, district)
+      // Query orders including customer location details and marketing attribution
+      const fullColumns = 'order_id,customer_name,customer_email,customer_phone,customer_country,customer_state,customer_district,traffic_source,utm_source,utm_medium,utm_campaign,utm_content,utm_term,fbclid,referrer_url,landing_page,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at';
       const response = await axios.get(
-        `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,customer_country,customer_state,customer_district,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
+        `${supabaseTableUrl()}?select=${fullColumns}&order=created_at.desc&limit=${limit}`,
         {
           headers: supabaseHeaders(),
           timeout: 10000
@@ -1100,16 +1192,22 @@ app.get('/api/admin/orders', async (req, res) => {
       );
       ordersList = response.data || [];
     } catch (dbErr) {
-      // Graceful fallback if location columns are not yet in Supabase schema
-      if (dbErr.response?.data?.message && (dbErr.response.data.message.includes('customer_country') || dbErr.response.data.code === '42703')) {
-        const fallbackRes = await axios.get(
-          `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
-          {
-            headers: supabaseHeaders(),
-            timeout: 10000
-          }
-        );
-        ordersList = fallbackRes.data || [];
+      // Graceful fallback if attribution or location columns are not yet in Supabase schema
+      const errMsg = dbErr.response?.data?.message || '';
+      if (errMsg.includes('traffic_source') || errMsg.includes('customer_country') || dbErr.response?.data?.code === '42703') {
+        try {
+          const fallbackRes = await axios.get(
+            `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,customer_country,customer_state,customer_district,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
+            { headers: supabaseHeaders(), timeout: 10000 }
+          );
+          ordersList = fallbackRes.data || [];
+        } catch (fbErr2) {
+          const fallbackRes2 = await axios.get(
+            `${supabaseTableUrl()}?select=order_id,customer_name,customer_email,customer_phone,amount,currency,status,transaction_id,payment_method_type,verified,verification_source,created_at,updated_at,paid_at&order=created_at.desc&limit=${limit}`,
+            { headers: supabaseHeaders(), timeout: 10000 }
+          );
+          ordersList = fallbackRes2.data || [];
+        }
       } else {
         throw dbErr;
       }
